@@ -1,9 +1,9 @@
 import mysql from "mysql2/promise";
 
 const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
+  host: "76.13.192.195",
+  user: "iotuser",
+  password: "123456",
   database: "iot_system",
   waitForConnections: true,
   connectionLimit: 10,
