@@ -4,6 +4,7 @@ import { getUser } from "../../lib/auth";
 export const dynamic = "force-dynamic";
 
 export async function GET(){
+
   const user = await getUser();
 
   if(!user){
@@ -20,15 +21,8 @@ export async function GET(){
       d.name,
       d.location,
       d.user_id,
-      sd.last_update
+      d.last_seen
     FROM devices d
-    LEFT JOIN (
-      SELECT 
-        device_id,
-        MAX(created_at) AS last_update
-      FROM sensor_data
-      GROUP BY device_id
-    ) sd ON d.device_id = sd.device_id
     WHERE 1=1
   `;
 
@@ -39,17 +33,19 @@ export async function GET(){
     params.push(user.id);
   }
 
-  query += ` ORDER BY d.id DESC`;
+  query += `
+    ORDER BY d.id DESC
+  `;
 
   const [rows] = await db.execute(query, params);
 
   const devices = rows.map(d => {
+
     let status = "offline";
 
-    if(d.last_update){
-      const diff = (Date.now() - new Date(d.last_update)) / 1000;
+    if(d.last_seen){
+      const diff = (Date.now() - new Date(d.last_seen)) / 1000;
 
-      // contoh: 10 menit = online
       if(diff < 600){
         status = "online";
       }
@@ -57,7 +53,6 @@ export async function GET(){
 
     return {
       ...d,
-      last_update: d.last_update, // tampilkan di table
       status
     };
   });
