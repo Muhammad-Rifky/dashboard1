@@ -103,12 +103,9 @@ export default function DashboardPage() {
     <div>
       {/* 🔥 JUDUL */}
       <h1 className="text-2xl font-bold text-black mb-2">
-        Data Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"}
+        Data Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"} Hari Ini
       </h1>
-
-      <p className="text-gray-500 mb-6">
-        Dalam 7 Hari Terakhir
-      </p>
+  
       {/* 🔥 DROPDOWN DEVICE */}
       <div className="mb-6">
         <select
@@ -127,13 +124,13 @@ export default function DashboardPage() {
       {/* ===== NILAI RATA RATA ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
 
-        <Card title="pH Rata-rata" value={data.average?.ph} unit="" type="ph" />
+        <Card title="pH Air" value={data.ph} unit="" type="ph" />
 
-        <Card title="Suhu Rata-rata" value={data.average?.suhu} unit="°C" type="suhu" />
+        <Card title="Suhu Air" value={data.suhu} unit="°C" type="suhu" />
 
-        <Card title="TDS Rata-rata" value={data.average?.tds} unit="ppm" type="tds" />
+        <Card title="TDS" value={data.tds} unit="ppm" type="tds" />
 
-        <Card title="Kekeruhan Rata-rata" value={data.average?.turbidity} unit="NTU" type="turbidity" />
+        <Card title="Kekeruhan" value={data.turbidity} unit="NTU" type="turbidity" />
       </div>
 
       {/* ===== GRAFIK ===== */}
@@ -260,6 +257,9 @@ function Chart({title,data,dataKey}){
       const date = new Date(label);
 
       return (
+        <h1 className="text-2xl font-bold text-black mb-2">
+       Grafik Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"} Dalam 7 Hari Terakhir
+      </h1>
         <div style={{ background:"#fff", padding:10, border:"1px solid #ccc" }}>
           <p>
             {date.toLocaleDateString("id-ID",{
