@@ -195,7 +195,6 @@ export default function DevicesPage(){
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Location</th>
               <th className="p-3 text-center">Status</th>
-              <th className="p-3 text-left">Last Update</th>
               <th className="p-3 text-center">Aksi</th>
             </tr>
           </thead>
@@ -209,11 +208,6 @@ export default function DevicesPage(){
                 <td className="p-3">{d.location}</td>
                 <td className="p-3 text-center">
                   {d.status === "online" ? "🟢 Online" : "🔴 offline"}
-                </td>
-                <td className="p-3">
-                  {d.last_seen
-                    ? new Date(d.last_seen).toLocaleString("id-ID")
-                    : "-"}
                 </td>
                 <td className="p-3 text-center">
                   <button
