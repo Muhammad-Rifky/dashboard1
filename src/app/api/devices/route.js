@@ -15,16 +15,22 @@ export async function GET(){
   }
 
   let query = `
-    SELECT 
-      d.id,
-      d.device_id,
-      d.name,
-      d.location,
-      d.user_id,
-      d.last_seen
-    FROM devices d
-    WHERE 1=1
-  `;
+  SELECT 
+  d.id,
+  d.device_id,
+  d.name,
+  d.location,
+  d.user_id,
+  s.last_update
+FROM devices d
+
+LEFT JOIN (
+  SELECT 
+    device_id,
+    MAX(created_at) AS last_update
+  FROM sensor_data
+  GROUP BY device_id
+) s ON s.device_id = d.device_id`;
 
   let params = [];
 
