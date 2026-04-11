@@ -18,6 +18,7 @@ export default function DashboardPage() {
 
   const [data,setData] = useState(null);
   const [devices,setDevices] = useState([]);
+  
   const [selectedDevice,setSelectedDevice] = useState("");
 
   // 🔥 LOAD DEVICE LIST
@@ -42,7 +43,7 @@ export default function DashboardPage() {
     fetch(`/api/sensor/dashboard?device_id=${selectedDevice}`)
     .then(res=>{
       if(res.status === 401){
-        window.location.href="/login"; // 🔥 PROTEKSI SESSION
+        window.location.href="/login";
         return null;
       }
       return res.json();
@@ -51,9 +52,7 @@ export default function DashboardPage() {
       if(res) setData(res);
     });
 
-    socket = io("http://localhost:3001",{
-      reconnection:false
-    });  //kalau sudah deploy ganti
+    socket = io("http://localhost:3001",{ reconnection:false });
 
     socket.on("sensor_update",(newData)=>{
 
@@ -64,25 +63,14 @@ export default function DashboardPage() {
 
         let updatedHistory = [...prev.history, newData];
 
-        // 🔥 LIMIT 14 DATA
+        // 🔥 LIMIT DATA
         if(updatedHistory.length > 14){
           updatedHistory = updatedHistory.slice(-14);
         }
 
-        // 🔥 HITUNG ULANG RATA-RATA
-        const avgPH = updatedHistory.reduce((a,b)=>a+Number(b.ph),0)/updatedHistory.length;
-        const avgSuhu = updatedHistory.reduce((a,b)=>a+Number(b.suhu),0)/updatedHistory.length;
-        const avgTDS = updatedHistory.reduce((a,b)=>a+Number(b.tds),0)/updatedHistory.length;
-        const avgTurbidity = updatedHistory.reduce((a,b)=>a+Number(b.turbidity),0)/updatedHistory.length;
-
+        // ❌ HAPUS average
         return {
-          history: updatedHistory,
-          average:{
-            ph: avgPH.toFixed(2),
-            suhu: avgSuhu.toFixed(2),
-            tds: avgTDS.toFixed(0),
-            turbidity: avgTurbidity.toFixed(2)
-          }
+          history: updatedHistory
         };
       });
 
@@ -95,23 +83,33 @@ export default function DashboardPage() {
   },[selectedDevice]);
 
   // 🔥 SAFE RENDER
-  if(!data || !data.average || !data.history){
+  if(!data || !data.history){
     return <p>Loading...</p>;
   }
 
+  // 🔥 AMBIL DATA TERAKHIR (INI KUNCI UTAMA)
+    const latest = data.history.reduce((latest, item) => {
+    if (!latest) return item;
+
+    return new Date(item.created_at) > new Date(latest.created_at)
+      ? item
+      : latest;
+  }, null);
+  
   return(
     <div>
+
       {/* 🔥 JUDUL */}
       <h1 className="text-2xl font-bold text-black mb-2">
         Data Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"} Hari Ini
       </h1>
-  
-      {/* 🔥 DROPDOWN DEVICE */}
+
+      {/* 🔥 DROPDOWN */}
       <div className="mb-6">
         <select
           value={selectedDevice}
           onChange={(e)=>setSelectedDevice(e.target.value)}
-          className=" p-2 rounded bg-white shadow border-gray-200 border-l-4"
+          className="p-2 rounded bg-white shadow border-gray-200 border-l-4"
         >
           {devices.map(d=>(
             <option key={d.id} value={d.device_id}>
@@ -121,20 +119,22 @@ export default function DashboardPage() {
         </select>
       </div>
 
-      {/* ===== NILAI RATA RATA ===== */}
+      {/* 🔥 DATA TERBARU (BUKAN AVERAGE) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
 
-        <Card title="pH Air" value={data.ph} unit="" type="ph" />
+        <Card title="pH Air" value={latest?.ph} unit="" type="ph" />
+        <Card title="Suhu Air" value={latest?.suhu} unit="°C" type="suhu" />
+        <Card title="TDS" value={latest?.tds} unit="ppm" type="tds" />
+        <Card title="Kekeruhan" value={latest?.turbidity} unit="NTU" type="turbidity" />
 
-        <Card title="Suhu Air" value={data.suhu} unit="°C" type="suhu" />
-
-        <Card title="TDS" value={data.tds} unit="ppm" type="tds" />
-
-        <Card title="Kekeruhan" value={data.turbidity} unit="NTU" type="turbidity" />
       </div>
 
-      {/* ===== GRAFIK ===== */}
+      {/* 🔥 GRAFIK */}
       <div className="grid grid-cols-1 gap-10">
+
+        <h1 className="text-2xl font-bold text-black mb-2">
+          Grafik Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"} Dalam 7 Hari Terakhir
+        </h1>
 
         <Chart title="Grafik pH" data={data.history} dataKey="ph" />
         <Chart title="Grafik Suhu" data={data.history} dataKey="suhu" />
@@ -188,6 +188,20 @@ function Card({ title, value, unit, type }) {
     }
   };
 
+   const formatValue = (val, type) => {
+    if (val === undefined || val === null) return "-";
+
+    const num = Number(val);
+
+    switch(type){
+      case "ph":
+        return num.toFixed(2); // 🔥 hanya pH 2 desimal
+
+      default:
+        return num; // lainnya biarin apa adanya
+    }
+  };
+
   // 🔥 FIX: kirim parameter dengan benar
   const status = getStatus(value, type);
 
@@ -209,7 +223,7 @@ function Card({ title, value, unit, type }) {
       <h2 className="text-gray-900 mb-2">{title}</h2>
 
       <p className={`text-3xl font-bold ${colorMap[status]}`}>
-        {value ?? "-"} {unit}
+        {formatValue(value, type)} {unit}
       </p>
 
       <p className="text-xs mt-2 text-gray-400 capitalize">
@@ -257,11 +271,9 @@ function Chart({title,data,dataKey}){
       const date = new Date(label);
 
       return (
-        <div>
-        <h1 className="text-2xl font-bold text-black mb-2">
-       Grafik Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"} Dalam 7 Hari Terakhir
-      </h1>
+        
         <div style={{ background:"#fff", padding:10, border:"1px solid #ccc" }}>
+          
           <p>
             {date.toLocaleDateString("id-ID",{
               day:"numeric",
@@ -277,7 +289,6 @@ function Chart({title,data,dataKey}){
           </p>
           <p>{dataKey}: {payload[0].value}</p>
         </div>
-      </div>
       );
     }
     return null;
