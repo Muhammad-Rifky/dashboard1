@@ -195,7 +195,7 @@ export default function DevicesPage(){
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Location</th>
               <th className="p-3 text-center">Status</th>
-              <th className="p-3 text-left">Last Seen</th>
+              <th className="p-3 text-left">Last Update</th>
               <th className="p-3 text-center">Aksi</th>
             </tr>
           </thead>
@@ -245,7 +245,7 @@ export default function DevicesPage(){
               <p><b>Lokasi:</b> {d.location}</p>
               <p><b>Status:</b> {d.status === "online" ? "🟢 Online" : "🔴 Offline"}</p>
               <p>
-                <b>Last Seen:</b>{" "}
+                <b>Last Update:</b>{" "}
                 {d.last_seen
                   ? new Date(d.last_seen).toLocaleString("id-ID")
                   : "-"}
