@@ -257,6 +257,7 @@ function Chart({title,data,dataKey}){
       const date = new Date(label);
 
       return (
+        <div>
         <h1 className="text-2xl font-bold text-black mb-2">
        Grafik Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"} Dalam 7 Hari Terakhir
       </h1>
@@ -276,6 +277,7 @@ function Chart({title,data,dataKey}){
           </p>
           <p>{dataKey}: {payload[0].value}</p>
         </div>
+      </div>
       );
     }
     return null;
