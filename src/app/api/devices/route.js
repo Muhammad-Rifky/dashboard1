@@ -4,7 +4,6 @@ import { getUser } from "../../lib/auth";
 export const dynamic = "force-dynamic";
 
 export async function GET(){
-
   const user = await getUser();
 
   if(!user){
@@ -21,8 +20,15 @@ export async function GET(){
       d.name,
       d.location,
       d.user_id,
-      d.last_seen
+      sd.last_seen
     FROM devices d
+    LEFT JOIN (
+      SELECT 
+        device_id,
+        MAX(created_at) AS last_seen
+      FROM sensor_data
+      GROUP BY device_id
+    ) sd ON d.device_id = sd.device_id
     WHERE 1=1
   `;
 
@@ -33,14 +39,11 @@ export async function GET(){
     params.push(user.id);
   }
 
-  query += `
-    ORDER BY d.id DESC
-  `;
+  query += ` ORDER BY d.id DESC`;
 
   const [rows] = await db.execute(query, params);
 
   const devices = rows.map(d => {
-
     let status = "offline";
 
     if(d.last_seen){
