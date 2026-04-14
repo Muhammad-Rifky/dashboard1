@@ -40,22 +40,22 @@ export async function GET(){
   const [rows] = await db.execute(query, params);
 
   const devices = rows.map(d => {
+  let status = "offline";
 
-    let status = "offline";
+  if (d.last_seen) {
+    const last = new Date(d.last_seen + "Z").getTime();
+    const diff = (Date.now() - last) / 1000;
 
-    if(d.last_seen){
-      const diff = (Date.now() - new Date(d.last_seen)) / 1000;
-
-      if(diff < 600){
-        status = "online";
-      }
+    if (diff < 600) {
+      status = "online";
     }
+  }
 
-    return {
-      ...d,
-      status
-    };
-  });
+  return {
+    ...d,
+    status
+  };
+});
 
   return Response.json(devices);
 }
