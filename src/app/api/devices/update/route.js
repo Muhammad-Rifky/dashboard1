@@ -1,25 +1,32 @@
-import mqtt from "mqtt";
-
 export async function POST(req) {
-  const client = mqtt.connect("mqtt://76.13.192.195:1883");
+  try {
+    const body = await req.json();
 
-  return new Promise((resolve) => {
-    client.on("connect", () => {
-
-      console.log("MQTT connected");
-
-      client.publish("iot/command", "update", () => {
-        console.log("Command sent: update");
-
-        client.end();
-
-        resolve(
-          Response.json({
-            success: true,
-            message: "Perintah update dikirim"
-          })
-        );
-      });
+    const res = await fetch("http://76.13.192.195:3001/publish", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        topic: "iot/command",
+        message: "update",
+      }),
     });
-  });
+
+    const data = await res.json();
+
+    return Response.json({
+      success: true,
+      message: "Perintah update dikirim via VPS",
+      data,
+    });
+
+  } catch (error) {
+    console.error("ERROR:", error);
+
+    return Response.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
 }
