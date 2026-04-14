@@ -1,11 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect,useState } from "react";
 
 export const dynamic = "force-dynamic";
 
 export default function DevicesPage(){
-
+  
+  const [cooldowns, setCooldowns] = useState({});
   const [devices,setDevices] = useState([]);
   const [currentPage,setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
@@ -13,6 +15,11 @@ export default function DevicesPage(){
   const [deviceId,setDeviceId] = useState("");
   const [name,setName] = useState("");
   const [location,setLocation] = useState("");
+
+  const router = useRouter();
+
+  const [selectedDetail,setSelectedDetail] = useState(null);
+  const [showDetail,setShowDetail] = useState(false);
 
   const [user,setUser] = useState(null);
   const [users,setUsers] = useState([]);
@@ -115,6 +122,42 @@ export default function DevicesPage(){
 
     loadDevices();
   }
+  async function handleUpdateDevice(deviceId) {
+
+    if (cooldowns[deviceId] > 0) return;
+
+    try {
+      await fetch("/api/devices/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ device_id: deviceId }),
+      });
+
+      // 🔥 mulai cooldown 60 detik per device
+      setCooldowns((prev) => ({
+        ...prev,
+        [deviceId]: 60,
+      }));
+
+      const interval = setInterval(() => {
+        setCooldowns((prev) => {
+          const newVal = (prev[deviceId] || 0) - 1;
+
+          if (newVal <= 0) {
+            clearInterval(interval);
+            return { ...prev, [deviceId]: 0 };
+          }
+
+          return { ...prev, [deviceId]: newVal };
+        });
+      }, 1000);
+
+    } catch (err) {
+      alert("Gagal update device");
+    }
+  }
 
   if(!user) return <div className="p-6">Loading...</div>;
 
@@ -122,6 +165,7 @@ export default function DevicesPage(){
   const indexOfFirst = indexOfLast - rowsPerPage;
   const currentDevices = devices.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(devices.length / rowsPerPage);
+  
   return(
 
     <div className="bg-white p-6 rounded shadow border-l-4 border-gray-200  sm:p-6">
@@ -195,6 +239,7 @@ export default function DevicesPage(){
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Location</th>
               <th className="p-3 text-center">Status</th>
+              <th className="p-3 text-left">Last Update</th>
               <th className="p-3 text-center">Aksi</th>
             </tr>
           </thead>
@@ -209,17 +254,35 @@ export default function DevicesPage(){
                 <td className="p-3 text-center">
                   {d.status === "online" ? "🟢 Online" : "🔴 offline"}
                 </td>
-                <td className="p-3 text-center">
+                <td className="p-3">
+                  {d.last_seen
+                    ? new Date(d.last_seen).toLocaleString("id-ID")
+                    : "-"}
+                </td>
+                <td className="p-3 text-center space-y-2">
+
                   <button
-                    onClick={()=>{
-                      setSelectedId(d.id);
-                      setSelectedName(d.name);
-                      setShowConfirm(true);
-                    }}
-                    className="mt-3 w-full bg-white text-red-500 hover:bg-red-500 px-4 py-2 shadow rounded hover:text-white cursor-pointer"
+                    onClick={() => router.push(`/devices/${d.id}`)}
+                    className="w-full bg-white text-blue-500 hover:bg-blue-500 px-4 py-2 shadow rounded hover:text-white cursor-pointer border border-blue-500"
                   >
-                    Hapus
+                    Detail
                   </button>
+
+                  <button
+                    onClick={() => handleUpdateDevice(d.device_id)}
+                    disabled={cooldowns[d.device_id] > 0}
+                    className={`w-full px-4 py-2 rounded text-white ${
+                      cooldowns[d.device_id] > 0
+                        ? "bg-gray-400"
+                        : "bg-green-500 hover:bg-green-600"
+                    }`}
+                  >
+                    {cooldowns[d.device_id] > 0
+                      ? `Tunggu ${cooldowns[d.device_id]}s`
+                      : "Update"}
+                  </button>
+
+
                 </td>
               </tr>
             ))}
@@ -239,7 +302,7 @@ export default function DevicesPage(){
               <p><b>Lokasi:</b> {d.location}</p>
               <p><b>Status:</b> {d.status === "online" ? "🟢 Online" : "🔴 Offline"}</p>
               <p>
-                <b>Last Update:</b>{" "}
+                <b>Last Seen:</b>{" "}
                 {d.last_seen
                   ? new Date(d.last_seen).toLocaleString("id-ID")
                   : "-"}
@@ -247,15 +310,11 @@ export default function DevicesPage(){
             </div>
 
             <button
-              onClick={()=>{
-                setSelectedId(d.id);
-                setSelectedName(d.name);
-                setShowConfirm(true);
-              }}
-              className="mt-3 w-full bg-white text-red-500 hover:bg-red-500 px-4 py-2 shadow rounded hover:text-white cursor-pointer"
-            >
-              Hapus
-            </button>
+                    onClick={() => router.push(`/devices/${d.id}`)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  >
+                    Detail
+                  </button>
           </div>
         ))}
       </div>
