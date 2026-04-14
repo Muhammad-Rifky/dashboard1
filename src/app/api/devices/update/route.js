@@ -1,14 +1,12 @@
 export async function POST(req) {
   try {
-    const body = await req.json();
-
     const res = await fetch("http://76.13.192.195:3001/publish", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        topic: "iot/command",
+        topic: "iot/control", //
         message: "update",
       }),
     });
@@ -17,7 +15,7 @@ export async function POST(req) {
 
     return Response.json({
       success: true,
-      message: "Perintah update dikirim via VPS",
+      message: "Perintah update dikirim",
       data,
     });
 
