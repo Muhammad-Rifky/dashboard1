@@ -3,18 +3,17 @@ import { getUser } from "../../lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(){
-
+export async function GET() {
   const user = await getUser();
 
-  if(!user){
+  if (!user) {
     return Response.json(
       { error: "Unauthorized" },
       { status: 401 }
     );
   }
 
- let query = `
+  let query = `
     SELECT 
       d.id,
       d.device_id,
@@ -25,37 +24,43 @@ export async function GET(){
     FROM devices d
     WHERE 1=1
   `;
-  
+
   let params = [];
 
-  if(user.role !== "superadmin"){
+  // filter user
+  if (user.role !== "superadmin") {
     query += " AND d.user_id = ?";
     params.push(user.id);
   }
 
-  query += `
-    ORDER BY d.id DESC
-  `;
+  query += " ORDER BY d.id DESC";
 
   const [rows] = await db.execute(query, params);
 
-  const devices = rows.map(d => {
-  let status = "offline";
+  const now = Date.now();
 
-  if (d.last_seen) {
-    const last = new Date(d.last_seen + "Z").getTime();
-    const diff = (Date.now() - last) / 1000;
+  const devices = rows.map((d) => {
+    let status = "offline";
 
-    if (diff < 600) {
-      status = "online";
+    if (d.last_seen) {
+      // ✅ FIX: pastikan parsing konsisten (MySQL DATETIME biasanya UTC-safe di Node)
+      const lastTime = new Date(d.last_seen).getTime();
+
+      // fallback safety kalau invalid date
+      if (!isNaN(lastTime)) {
+        const diff = (now - lastTime) / 1000;
+
+        if (diff < 600) {
+          status = "online";
+        }
+      }
     }
-  }
 
-  return {
-    ...d,
-    status
-  };
-});
+    return {
+      ...d,
+      status,
+    };
+  });
 
   return Response.json(devices);
 }
