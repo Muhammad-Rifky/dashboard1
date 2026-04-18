@@ -1,4 +1,4 @@
-import { fuzzyMamdani } from "../../../lib/fuzzy";
+import { fuzzyLogic } from "../../../lib/fuzzy";
 
 export async function POST(req) {
   try {
@@ -11,7 +11,7 @@ export async function POST(req) {
       );
     }
 
-    const result = fuzzyMamdani(temperature, humidity);
+    const result = fuzzyLogic(temperature, humidity);
 
     return Response.json(result);
   } catch (err) {
