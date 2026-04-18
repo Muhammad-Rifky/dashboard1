@@ -149,18 +149,20 @@ export default function DashboardPage() {
 
 function Card({ title, value, unit, type }) {
 
-  const getStatus = (latestValue, type) => {
+    const getStatus = (latestValue, type) => {
+    if (latestValue === null || latestValue === undefined || latestValue === "") {
+      return "no-data";
+    }
+
     const val = parseFloat(
       String(latestValue)
         .replace(",", ".")
         .replace(/[^0-9.-]/g, "")
     );
 
+    if (isNaN(val)) return "no-data";
+
     const t = String(type).toLowerCase();
-
-    console.log("TYPE:", t, "VALUE:", latestValue, "PARSED:", val);
-
-    if (isNaN(val)) return "normal";
 
     switch (t) {
       case "ph":

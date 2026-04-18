@@ -122,42 +122,7 @@ export default function DevicesPage(){
 
     loadDevices();
   }
-  async function handleUpdateDevice(deviceId) {
 
-    if (cooldowns[deviceId] > 0) return;
-
-    try {
-      await fetch("/api/devices/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ device_id: deviceId }),
-      });
-
-      // 🔥 mulai cooldown 60 detik per device
-      setCooldowns((prev) => ({
-        ...prev,
-        [deviceId]: 60,
-      }));
-
-      const interval = setInterval(() => {
-        setCooldowns((prev) => {
-          const newVal = (prev[deviceId] || 0) - 1;
-
-          if (newVal <= 0) {
-            clearInterval(interval);
-            return { ...prev, [deviceId]: 0 };
-          }
-
-          return { ...prev, [deviceId]: newVal };
-        });
-      }, 1000);
-
-    } catch (err) {
-      alert("Gagal update device");
-    }
-  }
 
   if(!user) return <div className="p-6">Loading...</div>;
 
@@ -252,7 +217,15 @@ export default function DevicesPage(){
                 <td className="p-3">{d.name}</td>
                 <td className="p-3">{d.location}</td>
                 <td className="p-3 text-center">
-                  {d.status === "online" ? "🟢 Online" : "🔴 offline"}
+                  <span
+                    className={
+                      d?.status === "online"
+                        ? "text-green-500 font-semibold"
+                        : "text-red-500 font-semibold"
+                    }
+                  >
+                    {d?.status || "offline"}
+                  </span>
                 </td>
                 <td className="p-3">
                   {d.last_seen
@@ -267,22 +240,6 @@ export default function DevicesPage(){
                   >
                     Detail
                   </button>
-
-                  <button
-                    onClick={() => handleUpdateDevice(d.device_id)}
-                    disabled={cooldowns[d.device_id] > 0}
-                    className={`w-full px-4 py-2 rounded text-white ${
-                      cooldowns[d.device_id] > 0
-                        ? "bg-gray-400"
-                        : "bg-green-500 hover:bg-green-600"
-                    }`}
-                  >
-                    {cooldowns[d.device_id] > 0
-                      ? `Tunggu ${cooldowns[d.device_id]}s`
-                      : "Update"}
-                  </button>
-
-
                 </td>
               </tr>
             ))}
