@@ -1,9 +1,9 @@
 import mysql from "mysql2/promise";
 
 const config = {
-  host: "localhost",
-  user: "root",
-  password: "",
+  host: "76.13.192.195",
+  user: "iotuser",
+  password: "123456",
   database: "iot_system",
 };
 
