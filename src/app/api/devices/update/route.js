@@ -11,8 +11,10 @@ export async function POST(req) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+
         topic: "iot/control",
         message: JSON.stringify({ device_id, command }),
+
       }),
     });
 
@@ -20,7 +22,9 @@ export async function POST(req) {
 
     return Response.json({
       success: true,
+
       message: `Command ${command} sent`,
+
       data,
     });
 
