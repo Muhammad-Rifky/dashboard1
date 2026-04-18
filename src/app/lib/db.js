@@ -1,13 +1,18 @@
 import mysql from "mysql2/promise";
 
-const pool = mysql.createPool({
-  host: "76.13.192.195",
-  user: "iotuser",
-  password: "123456",
+const config = {
+  host: "localhost",
+  user: "root",
+  password: "",
   database: "iot_system",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+};
+
+const db = mysql.createPool(config);
+
+// debug aman
+console.log("🔥 DB CONNECTED:", {
+  host: config.host,
+  database: config.database,
 });
 
-export default pool;
+export default db;
