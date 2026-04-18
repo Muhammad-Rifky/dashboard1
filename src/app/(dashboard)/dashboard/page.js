@@ -52,7 +52,7 @@ export default function DashboardPage() {
       if(res) setData(res);
     });
 
-    socket = io("http://76.13.192.195:3001",{ reconnection:false });
+    socket =io("https://iot-aqua-rifky.duckdns.org",{ reconnection:false });
 
     socket.on("sensor_update",(newData)=>{
 
