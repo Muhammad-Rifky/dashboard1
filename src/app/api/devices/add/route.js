@@ -51,8 +51,8 @@ export async function POST(req){
 
     // 🔥 INSERT
     await db.execute(
-      `INSERT INTO devices (device_id, name, location, status, user_id)
-       VALUES (?, ?, ?, 'offline', ?)`,
+      `INSERT INTO devices (device_id, name, location, user_id)
+       VALUES (?, ?, ?, ?)`,
       [device_id, name, location, owner_id]
     );
 
