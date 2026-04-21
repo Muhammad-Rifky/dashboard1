@@ -106,6 +106,7 @@ export default function DeviceDetail() {
   };
 
   const isRunning = pumpStatus !== "off";
+  const isOffline = device?.status !== "online";
 
   if (loading || !device) {
     return <div className="p-6 text-gray-500">Loading device...</div>;
@@ -235,22 +236,22 @@ export default function DeviceDetail() {
           {/* UPDATE */}
           <button
             onClick={handleUpdateDevice}
-            disabled={cooldown > 0}
+            disabled={cooldown > 0||isOffline}
             className={`w-full px-4 py-2 rounded border ${
-              cooldown > 0
+              cooldown > 0 || isOffline
                 ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
                 : "bg-white text-green-500 border-green-500 hover:bg-green-500 hover:text-white"
             }`}
           >
-            {cooldown > 0 ? `Tunggu ${cooldown}s` : "Update"}
+            {cooldown > 0? `Tunggu ${cooldown}s` : "Update"}
           </button>
 
           {/* AUTO */}
           <button
             onClick={handleReplaceWater}
-            disabled={isRunning}
+            disabled={isRunning || isOffline}
             className={`w-full px-4 py-2 rounded border ${
-              isRunning
+              isRunning || isOffline
                 ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
                 : "bg-white text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white"
             }`}
@@ -261,9 +262,9 @@ export default function DeviceDetail() {
           {/* MANUAL ON */}
           <button
             onClick={handlePumpOn}
-            disabled={isRunning}
+            disabled={isRunning||isOffline}
             className={`w-full px-4 py-2 rounded border ${
-              isRunning
+              isRunning || isOffline
                 ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
                 : "bg-white text-purple-500 border-purple-500 hover:bg-purple-500 hover:text-white"
             }`}
@@ -274,9 +275,9 @@ export default function DeviceDetail() {
           {/* STOP */}
           <button
             onClick={handlePumpOff}
-            disabled={pumpStatus === "off"}
+            disabled={pumpStatus === "off" || isOffline}
             className={`w-full px-4 py-2 rounded border ${
-              pumpStatus === "off"
+              pumpStatus === "off" || isOffline
                 ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed"
                 : "bg-white text-red-500 border-red-500 hover:bg-red-500 hover:text-white"
             }`}
