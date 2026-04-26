@@ -246,32 +246,77 @@ export default function DevicesPage(){
           </tbody>
         </table>
       </div>
+      
       {/* MOBILE VIEW */}
       <div className="md:hidden space-y-4">
-        {currentDevices.map((d,i)=>(
-          <div key={d.id} className="border rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500">#{indexOfFirst + i + 1}</p>
+        {currentDevices.map((d, i) => (
+          <div
+            key={d.id}
+            className="bg-white border rounded-2xl shadow-sm p-4"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <p className="text-xs text-gray-400">
+                  #{indexOfFirst + i + 1}
+                </p>
 
-            <p className="font-semibold">{d.name}</p>
-            <p className="text-sm text-gray-600">{d.device_id}</p>
+                <h3 className="font-semibold text-gray-800 text-base">
+                  {d.name}
+                </h3>
 
-            <div className="mt-2 text-sm">
-              <p><b>Lokasi:</b> {d.location}</p>
-              <p><b>Status:</b> {d.status === "online" ? "🟢 Online" : "🔴 Offline"}</p>
+                <p className="text-sm text-gray-500 break-all">
+                  {d.device_id}
+                </p>
+              </div>
+
+              <span
+                className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  d.status === "online"
+                    ? "bg-green-100 text-green-600"
+                    : "bg-red-100 text-red-600"
+                }`}
+              >
+                {d.status === "online"
+                  ? "Online"
+                  : "Offline"}
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-1 text-sm text-gray-700">
               <p>
-                <b>Last Seen:</b>{" "}
+                <span className="font-medium">
+                  Lokasi:
+                </span>{" "}
+                {d.location}
+              </p>
+
+              <p>
+                <span className="font-medium">
+                  Last Seen:
+                </span>{" "}
                 {d.last_seen
-                  ? new Date(d.last_seen).toLocaleString("id-ID")
+                  ? new Date(
+                      d.last_seen
+                    ).toLocaleString(
+                      "id-ID"
+                    )
                   : "-"}
               </p>
             </div>
 
+            {/* Action */}
             <button
-                    onClick={() => router.push(`/devices/${d.id}`)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                  >
-                    Detail
-                  </button>
+              onClick={() =>
+                router.push(
+                  `/devices/${d.id}`
+                )
+              }
+              className="mt-4 w-full bg-white text-blue-500 py-2 cursor-pointer rounded-xl hover:bg-blue-600 transition border border-blue-500 hover:text-white"
+            >
+              Detail
+            </button>
           </div>
         ))}
       </div>

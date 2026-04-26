@@ -169,6 +169,19 @@ export default function LoginPage(){
             {loading ? "Logging in..." : "Login"}
 
           </button>
+          <p className="mt-4 text-sm text-center">
+            Belum memiliki akun?{" "}
+            <button
+              onClick={() =>
+                router.push(
+                  "/register"
+                )
+              }
+              className="text-blue-500 hover:underline cursor-pointer"
+            >
+              Daftar di sini
+            </button>
+          </p>
 
         </div>
 

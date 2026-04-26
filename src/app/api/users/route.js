@@ -25,7 +25,7 @@ export async function GET() {
 
     // 🔹 Ambil semua user dari DB
     const [rows] = await db.execute(
-      "SELECT id, name, email, role FROM users ORDER BY id DESC"
+      "SELECT id, name, email, role, status FROM users ORDER BY id DESC"
     );
 
     return NextResponse.json(rows);
