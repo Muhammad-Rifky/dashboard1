@@ -71,18 +71,14 @@ export default function UsersPage() {
   }
 
   // FILTER
-  const filteredUser = users.filter(
-    (u) =>
-      u.name
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      u.email
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      u.role
-        .toLowerCase()
-        .includes(search.toLowerCase())
-  );
+  const keyword = search?.toLowerCase() || "";
+
+  const filteredUser = users?.filter((u) =>
+    [u.name, u.email, u.role]
+      .some((field) =>
+        field?.toLowerCase().includes(keyword)
+      )
+  ) || [];
 
   // PAGINATION
   const indexOfLast =
