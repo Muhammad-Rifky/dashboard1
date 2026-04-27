@@ -71,18 +71,14 @@ export default function UsersPage() {
   }
 
   // FILTER
-  const filteredUser = users.filter(
-    (u) =>
-      u.name
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      u.email
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      u.role
-        .toLowerCase()
-        .includes(search.toLowerCase())
-  );
+  const keyword = search?.toLowerCase() || "";
+
+  const filteredUser = users?.filter((u) =>
+    [u.name, u.email, u.role]
+      .some((field) =>
+        field?.toLowerCase().includes(keyword)
+      )
+  ) || [];
 
   // PAGINATION
   const indexOfLast =
@@ -106,9 +102,9 @@ export default function UsersPage() {
     <div className="bg-white p-4 sm:p-6 rounded shadow border-l-4 border-gray-200">
 
       {/* TITLE */}
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800">
         Manajemen User
-      </h2>
+      </h1>
 
       {/* SEARCH */}
       <div className="mb-4 w-full sm:w-96 flex items-center gap-3 border border-gray-300 rounded-full px-4 py-2 shadow-sm">
