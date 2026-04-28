@@ -271,7 +271,7 @@ export default function DeviceDetail() {
                 </td>
                 <td className="p-3">
                   {
-                    latestSensor.turbidity
+                    latestSensor.turbidity_status
                   }
                 </td>
                 <td className="p-3">
@@ -329,7 +329,7 @@ export default function DeviceDetail() {
             <p>
               <b>Kekeruhan:</b>{" "}
               {
-                latestSensor.turbidity
+                latestSensor.turbidity_status
               }
             </p>
 
