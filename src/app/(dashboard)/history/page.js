@@ -198,7 +198,7 @@ export default function HistoriPage(){
               <th className="p-3 text-left">pH</th>
               <th className="p-3 text-left">Suhu</th>
               <th className="p-3 text-left">TDS</th>
-              <th className="p-3 text-left">NTU</th>
+              <th className="p-3 text-left">Status Kekeruhan</th>
               <th className="p-3 text-left w-1/4">Waktu</th>
             </tr>
           </thead>
@@ -218,7 +218,7 @@ export default function HistoriPage(){
                 <td className="p-3">{Number(d.ph).toFixed(2)}</td>
                 <td className="p-3">{Number(d.suhu).toFixed(2)}°C</td>
                 <td className="p-3">{d.tds}</td>
-                <td className="p-3">{d.turbidity}</td>
+                <td className="p-3">{d.turbidity_status}</td>
                 <td className="p-3">
                   {new Date(d.created_at).toLocaleString("id-ID")}
                 </td>
