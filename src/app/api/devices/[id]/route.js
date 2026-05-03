@@ -33,13 +33,12 @@ export async function GET(request, { params }) {
     let status = "offline";
 
     if (device.last_seen) {
-      const last = new Date(device.last_seen + " +07:00").getTime();
+      const last = new Date(device.last_seen + "Z").getTime(); // ✅ FIX
       const diff = (Date.now() - last) / 1000;
 
       status = diff < 600 ? "online" : "offline";
     }
-
-    // SENSOR
+        // SENSOR
     const [sensor] = await db.execute(
       `SELECT ph, suhu, tds, turbidity_status, created_at
        FROM sensor_data
