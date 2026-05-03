@@ -32,8 +32,8 @@ export async function GET(request, { params }) {
     // STATUS
     let status = "offline";
 
-    if (d.last_seen) {
-      const last = new Date(d.last_seen + " +07:00").getTime();
+    if (device.last_seen) {
+      const last = new Date(device.last_seen + " +07:00").getTime();
       const diff = (Date.now() - last) / 1000;
 
       status = diff < 600 ? "online" : "offline";
