@@ -4,6 +4,7 @@ import { getUser } from "../../lib/auth";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  
   const user = await getUser();
 
   if (!user) {
@@ -20,7 +21,8 @@ export async function GET() {
       d.name,
       d.location,
       d.user_id,
-      d.last_seen
+      d.last_seen,
+      d.status
     FROM devices d
     WHERE 1=1
   `;
@@ -37,21 +39,6 @@ export async function GET() {
 
   const [rows] = await db.execute(query, params);
 
-  const devices = rows.map(d => {
-  let status = "offline";
-
-  if (d.last_seen) {
-    const last = new Date(d.last_seen + "Z").getTime(); // ✅ FIX UTC
-    const diff = (Date.now() - last) / 1000;
-
-    status = diff < 600 ? "online" : "offline";
-  }
-
-  return {
-    ...d,
-    status
-  };
-});
-
-  return Response.json(devices);
+  // langsung kirim hasil DB
+  return Response.json(rows);
 }

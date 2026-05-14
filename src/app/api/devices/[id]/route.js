@@ -15,8 +15,16 @@ export async function GET(request, { params }) {
 
     // DEVICE
     const [devices] = await db.execute(
-      `SELECT id, device_id, name, location, user_id, last_seen
-       FROM devices WHERE id = ?`,
+      `SELECT 
+          id,
+          device_id,
+          name,
+          location,
+          user_id,
+          last_seen,
+          status
+      FROM devices
+      WHERE id = ?`,
       [id]
     );
 
@@ -29,15 +37,6 @@ export async function GET(request, { params }) {
 
     const device = devices[0];
 
-    // STATUS
-    let status = "offline";
-
-    if (device.last_seen) {
-      const last = new Date(device.last_seen + "Z").getTime(); // ✅ FIX
-      const diff = (Date.now() - last) / 1000;
-
-      status = diff < 600 ? "online" : "offline";
-    }
         // SENSOR
     const [sensor] = await db.execute(
       `SELECT ph, suhu, tds, turbidity_status, created_at
@@ -50,7 +49,6 @@ export async function GET(request, { params }) {
 
     return Response.json({
       ...device,
-      status,
       sensor: sensor ?? []
     });
 
