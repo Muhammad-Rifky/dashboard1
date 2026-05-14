@@ -1,20 +1,30 @@
+const lastRequestMap = new Map();
+
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { device_id, command = "update" } = body;
+    const { device_id, command = "update" } = await req.json();
 
-    console.log("📨 SEND TO MQTT:", { device_id, command });
+    const key = `${device_id}-${command}`;
+    const now = Date.now();
+
+    const lastTime = lastRequestMap.get(key);
+
+    // 🔥 BLOCK DUPLICATE REQUEST (2 detik window)
+    if (lastTime && now - lastTime < 2000) {
+      return Response.json({
+        success: false,
+        message: "Duplicate request blocked",
+      });
+    }
+
+    lastRequestMap.set(key, now);
 
     const res = await fetch("http://76.13.192.195:3001/publish", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-
         topic: "iot/control",
         message: JSON.stringify({ device_id, command }),
-
       }),
     });
 
@@ -22,14 +32,11 @@ export async function POST(req) {
 
     return Response.json({
       success: true,
-
       message: `Command ${command} sent`,
-
       data,
     });
 
-  } catch (error) {
-    console.error(error);
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }
