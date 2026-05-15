@@ -2,7 +2,18 @@ const lastRequestMap = new Map();
 
 export async function POST(req) {
   try {
-    const { device_id, command = "update" } = await req.json();
+    const {
+      device_id,
+      command = "update",
+      duration = 0
+    } = await req.json();
+
+    if (!device_id) {
+      return Response.json(
+        { success: false, message: "device_id wajib" },
+        { status: 400 }
+      );
+    }
 
     const key = `${device_id}-${command}`;
     const now = Date.now();
@@ -19,12 +30,22 @@ export async function POST(req) {
 
     lastRequestMap.set(key, now);
 
+    console.log("📨 SEND TO MQTT:", {
+      device_id,
+      command,
+      duration
+    });
+
+    // 🔥 FIX UTAMA: PER-DEVICE TOPIC
     const res = await fetch("http://76.13.192.195:3001/publish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        topic: "iot/control",
-        message: JSON.stringify({ device_id, command }),
+        topic: `iot/control/${device_id}`,   // ✅ FIX INI
+        message: JSON.stringify({
+          command,
+          duration
+        }),
       }),
     });
 
@@ -32,11 +53,15 @@ export async function POST(req) {
 
     return Response.json({
       success: true,
-      message: `Command ${command} sent`,
+      message: `Command ${command} sent to ${device_id}`,
       data,
     });
 
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error("API ERROR:", err);
+    return Response.json(
+      { success: false, error: err.message },
+      { status: 500 }
+    );
   }
 }
