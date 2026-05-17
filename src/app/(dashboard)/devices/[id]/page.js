@@ -57,14 +57,24 @@ export default function DeviceDetail() {
   SYNC PUMP STATUS FROM DB
   ========================
   */
-  useEffect(() => {
-  if (device?.pump_status) {
-    setPumpStatus(
-      device.pump_status === "on"
-        ? "manual"
-        : "off"
-    );
+useEffect(() => {
+  if (!device?.pump_status) return;
+
+  // kalau DB bilang OFF → paksa frontend OFF
+  if (device.pump_status === "off") {
+    setPumpStatus("off");
+    return;
   }
+
+  // kalau DB ON dan frontend masih OFF
+  // berarti ini pompa manual
+  if (
+    device.pump_status === "on" &&
+    pumpStatus === "off"
+  ) {
+    setPumpStatus("manual");
+  }
+
 }, [device]);
 
   /*
