@@ -53,30 +53,26 @@ export async function POST(req) {
     ========================
     */
 
-    if (
-      command === "pompa_on" ||
-      command === "ganti_air"
-    ) {
-      await db.query(
-        `
-        UPDATE devices
-        SET pump_status='on'
-        WHERE device_id=?
-      `,
-        [device_id]
-      );
-    }
+if (command === "pompa_on") {
+  await db.query(
+    `UPDATE devices SET pump_status='manual' WHERE device_id=?`,
+    [device_id]
+  );
+}
 
-    if (command === "pompa_off") {
-      await db.query(
-        `
-        UPDATE devices
-        SET pump_status='off'
-        WHERE device_id=?
-      `,
-        [device_id]
-      );
-    }
+if (command === "ganti_air") {
+  await db.query(
+    `UPDATE devices SET pump_status='auto' WHERE device_id=?`,
+    [device_id]
+  );
+}
+
+if (command === "pompa_off") {
+  await db.query(
+    `UPDATE devices SET pump_status='off' WHERE device_id=?`,
+    [device_id]
+  );
+}
 
     /*
     ========================
