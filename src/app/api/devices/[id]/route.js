@@ -22,7 +22,8 @@ export async function GET(request, { params }) {
           location,
           user_id,
           last_seen,
-          status
+          status,
+          pump_status
       FROM devices
       WHERE id = ?`,
       [id]
