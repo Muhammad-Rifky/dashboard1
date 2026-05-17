@@ -7,25 +7,34 @@ export default function DeviceDetail() {
   const params = useParams();
 
   const [isSending, setIsSending] = useState(false);
-
   const [device, setDevice] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // tetap dipakai, tapi sinkron dari DB
-  const [pumpStatus, setPumpStatus] = useState("off");
 
   const [cooldown, setCooldown] = useState(0);
   const [duration, setDuration] = useState(600);
 
+  // hanya untuk tampilan AUTO
+  const [isAutoPump, setIsAutoPump] =
+    useState(false);
+
+  /*
+  ========================
+  FETCH DATA
+  ========================
+  */
   const fetchData = async () => {
     try {
-      const res = await fetch(`/api/devices/${params.id}`, {
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `/api/devices/${params.id}`,
+        {
+          cache: "no-store",
+        }
+      );
 
       const data = await res.json();
 
       setDevice(data);
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -48,51 +57,67 @@ export default function DeviceDetail() {
   ========================
   */
   useEffect(() => {
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(
+      fetchData,
+      5000
+    );
+
+    return () =>
+      clearInterval(interval);
   }, []);
 
   /*
   ========================
-  SYNC PUMP STATUS FROM DB
+  AUTO RESET AUTO MODE
+  jika DB sudah OFF
   ========================
   */
-useEffect(() => {
-  if (!device?.pump_status) return;
-
-  // kalau DB bilang OFF → paksa frontend OFF
-  if (device.pump_status === "off") {
-    setPumpStatus("off");
-    return;
-  }
-
-  // kalau DB ON dan frontend masih OFF
-  // berarti ini pompa manual
-  if (
-    device.pump_status === "on" &&
-    pumpStatus === "off"
-  ) {
-    setPumpStatus("manual");
-  }
-
-}, [device]);
+  useEffect(() => {
+    if (
+      device?.pump_status === "off"
+    ) {
+      setIsAutoPump(false);
+    }
+  }, [device?.pump_status]);
 
   /*
   ========================
   LATEST SENSOR
   ========================
   */
-  const latestSensor = device?.sensor?.reduce(
-    (latest, item) => {
-      if (!latest) return item;
+  const latestSensor =
+    device?.sensor?.reduce(
+      (latest, item) => {
+        if (!latest) return item;
 
-      return new Date(item.created_at) >
-        new Date(latest.created_at)
-        ? item
-        : latest;
-    },
-    null
-  );
+        return new Date(
+          item.created_at
+        ) >
+          new Date(
+            latest.created_at
+          )
+          ? item
+          : latest;
+      },
+      null
+    );
+
+  /*
+  ========================
+  DERIVED PUMP STATUS
+  ========================
+  */
+  const pumpStatus =
+    device?.pump_status === "on"
+      ? "manual"
+      : "off";
+
+  const isRunning =
+    device?.pump_status === "on";
+
+  const isOffline =
+    device?.status !==
+    "online";
 
   /*
   ========================
@@ -103,29 +128,38 @@ useEffect(() => {
     command,
     extra = {}
   ) => {
-    if (!device?.device_id) return;
+    if (!device?.device_id)
+      return;
 
     if (isSending) return;
 
     setIsSending(true);
 
     try {
-      await fetch("/api/devices/update", {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          device_id:
-            device.device_id,
-          command,
-          ...extra,
-        }),
-      });
+      await fetch(
+        "/api/devices/update",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify(
+            {
+              device_id:
+                device.device_id,
+              command,
+              ...extra,
+            }
+          ),
+        }
+      );
 
-      // refresh setelah command
-      setTimeout(fetchData, 1500);
+      setTimeout(
+        fetchData,
+        1500
+      );
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -140,25 +174,31 @@ useEffect(() => {
   */
   const handleUpdateDevice =
     async () => {
-      await sendCommand("update");
+      await sendCommand(
+        "update"
+      );
 
       setCooldown(10);
 
-      const interval = setInterval(
-        () => {
-          setCooldown((prev) => {
-            if (prev <= 1) {
-              clearInterval(
-                interval
-              );
-              return 0;
-            }
+      const interval =
+        setInterval(() => {
+          setCooldown(
+            (prev) => {
+              if (
+                prev <= 1
+              ) {
+                clearInterval(
+                  interval
+                );
+                return 0;
+              }
 
-            return prev - 1;
-          });
-        },
-        1000
-      );
+              return (
+                prev - 1
+              );
+            }
+          );
+        }, 1000);
     };
 
   /*
@@ -168,7 +208,7 @@ useEffect(() => {
   */
   const handleReplaceWater =
     async () => {
-      if (pumpStatus !== "off")
+      if (isRunning)
         return;
 
       await sendCommand(
@@ -178,7 +218,8 @@ useEffect(() => {
         }
       );
 
-      setPumpStatus("on");
+      // hanya ubah label
+      setIsAutoPump(true);
     };
 
   /*
@@ -188,14 +229,14 @@ useEffect(() => {
   */
   const handlePumpOn =
     async () => {
-      if (pumpStatus !== "off")
+      if (isRunning)
         return;
 
       await sendCommand(
         "pompa_on"
       );
 
-      setPumpStatus("on");
+      setIsAutoPump(false);
     };
 
   /*
@@ -209,17 +250,13 @@ useEffect(() => {
         "pompa_off"
       );
 
-      setPumpStatus("off");
+      setIsAutoPump(false);
     };
 
-  const isRunning =
-    pumpStatus === "on";
-
-  const isOffline =
-    device?.status !==
-    "online";
-
-  if (loading || !device) {
+  if (
+    loading ||
+    !device
+  ) {
     return (
       <div className="p-6">
         Loading...
@@ -255,7 +292,9 @@ useEffect(() => {
 
           <p>
             <b>ID:</b>{" "}
-            {device.device_id}
+            {
+              device.device_id
+            }
           </p>
 
           <p>
@@ -265,7 +304,9 @@ useEffect(() => {
 
           <p>
             <b>Lokasi:</b>{" "}
-            {device.location}
+            {
+              device.location
+            }
           </p>
 
           <p>
@@ -278,7 +319,9 @@ useEffect(() => {
                   : "text-red-500 font-semibold"
               }
             >
-              {device.status}
+              {
+                device.status
+              }
             </span>
           </p>
 
@@ -286,12 +329,17 @@ useEffect(() => {
             <b>Pompa:</b>{" "}
             <span
               className={
-                pumpStatus === "on"
+                isAutoPump
                   ? "text-blue-500 font-semibold"
+                  : pumpStatus ===
+                    "manual"
+                  ? "text-purple-500 font-semibold"
                   : "text-gray-500 font-semibold"
               }
             >
-              {pumpStatus.toUpperCase()}
+              {isAutoPump
+                ? "AUTO"
+                : pumpStatus.toUpperCase()}
             </span>
           </p>
 
@@ -312,7 +360,8 @@ useEffect(() => {
       {/* SENSOR DESKTOP */}
       <div className="hidden md:block bg-white p-6 rounded-xl shadow border mb-6">
         <h2 className="font-semibold mb-4 text-gray-700">
-          Data Sensor Terbaru
+          Data Sensor
+          Terbaru
         </h2>
 
         <table className="w-full text-sm">
@@ -342,7 +391,9 @@ useEffect(() => {
                 <td className="p-3">
                   {Number(
                     latestSensor.ph
-                  ).toFixed(2)}
+                  ).toFixed(
+                    2
+                  )}
                 </td>
                 <td className="p-3">
                   {
@@ -373,66 +424,13 @@ useEffect(() => {
                   colSpan="5"
                   className="p-4 text-center text-gray-500"
                 >
-                  Tidak ada data
+                  Tidak ada
+                  data
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </div>
-
-      {/* SENSOR MOBILE */}
-      <div className="md:hidden mb-6">
-        <h2 className="font-semibold mb-4 text-gray-700">
-          Sensor Terbaru
-        </h2>
-
-        {latestSensor ? (
-          <div className="bg-white border rounded-2xl shadow-sm p-4 space-y-2 text-sm">
-
-            <p>
-              <b>pH:</b>{" "}
-              {Number(
-                latestSensor.ph
-              ).toFixed(2)}
-            </p>
-
-            <p>
-              <b>Suhu:</b>{" "}
-              {
-                latestSensor.suhu
-              }
-            </p>
-
-            <p>
-              <b>TDS:</b>{" "}
-              {
-                latestSensor.tds
-              }
-            </p>
-
-            <p>
-              <b>Kekeruhan:</b>{" "}
-              {
-                latestSensor.turbidity_status
-              }
-            </p>
-
-            <p>
-              <b>Waktu:</b>{" "}
-              {new Date(
-                latestSensor.created_at
-              ).toLocaleString(
-                "id-ID"
-              )}
-            </p>
-
-          </div>
-        ) : (
-          <div className="text-gray-500">
-            Tidak ada data
-          </div>
-        )}
       </div>
 
       {/* CONTROL */}
@@ -444,17 +442,23 @@ useEffect(() => {
         <input
           type="number"
           min="1"
-          value={duration / 60}
-          disabled={isRunning}
-          onChange={(e) =>
+          value={
+            duration / 60
+          }
+          disabled={
+            isRunning
+          }
+          onChange={(
+            e
+          ) =>
             setDuration(
               Number(
-                e.target.value
+                e.target
+                  .value
               ) * 60
             )
           }
           className="border p-3 rounded w-full mb-4"
-          placeholder="Durasi menit"
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -464,13 +468,15 @@ useEffect(() => {
               handleUpdateDevice
             }
             disabled={
-              cooldown > 0 ||
+              cooldown >
+                0 ||
               isOffline ||
               isSending
             }
             className="w-full border border-green-500 text-green-500 py-2 rounded hover:bg-green-500 hover:text-white disabled:bg-gray-400 disabled:text-white"
           >
-            {cooldown > 0
+            {cooldown >
+            0
               ? `Tunggu ${cooldown}s`
               : "Update"}
           </button>
@@ -508,8 +514,7 @@ useEffect(() => {
               handlePumpOff
             }
             disabled={
-              pumpStatus ===
-                "off" ||
+              !isRunning ||
               isOffline ||
               isSending
             }
