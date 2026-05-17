@@ -1,5 +1,3 @@
-const lastRequestMap = new Map();
-
 export async function POST(req) {
   try {
     const {
@@ -15,33 +13,17 @@ export async function POST(req) {
       );
     }
 
-    const key = `${device_id}-${command}`;
-    const now = Date.now();
-
-    const lastTime = lastRequestMap.get(key);
-
-    // 🔥 BLOCK DUPLICATE REQUEST (2 detik window)
-    if (lastTime && now - lastTime < 2000) {
-      return Response.json({
-        success: false,
-        message: "Duplicate request blocked",
-      });
-    }
-
-    lastRequestMap.set(key, now);
-
     console.log("📨 SEND TO MQTT:", {
       device_id,
       command,
       duration
     });
 
-    // 🔥 FIX UTAMA: PER-DEVICE TOPIC
     const res = await fetch("http://76.13.192.195:3001/publish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        topic: `iot/control/${device_id}`,   // ✅ FIX INI
+        topic: `iot/control/${device_id}`,
         message: JSON.stringify({
           command,
           duration
