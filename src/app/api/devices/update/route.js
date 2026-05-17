@@ -1,40 +1,25 @@
 import db from "../../../lib/db";
 
-const lastRequestMap =
-  new Map();
-
 export async function POST(req) {
   try {
+    const body = await req.json();
+
     const {
       device_id,
-      command = "update",
+      command,
       duration = 0,
-    } = await req.json();
+    } = body;
 
-    const key =
-      `${device_id}-${command}`;
+    const topic =
+      `iot/control/${device_id}`;
 
-    const now = Date.now();
+    const message = JSON.stringify({
+      command,
+      duration,
+    });
 
-    const lastTime =
-      lastRequestMap.get(key);
-
-    if (
-      lastTime &&
-      now - lastTime < 2000
-    ) {
-      return Response.json({
-        success: false,
-      });
-    }
-
-    lastRequestMap.set(
-      key,
-      now
-    );
-
-    await fetch(
-      "http://76.13.192.195:3001/publish",
+    const mqttRes = await fetch(
+      "http://localhost:3001/publish",
       {
         method: "POST",
         headers: {
@@ -42,23 +27,68 @@ export async function POST(req) {
             "application/json",
         },
         body: JSON.stringify({
-          topic: `iot/control/${device_id}`,
-          message:
-            JSON.stringify({
-              command,
-              duration,
-            }),
+          topic,
+          message,
         }),
       }
     );
 
-    // simpan waktu request update
+    const result =
+      await mqttRes.json();
+
+    if (!result.success) {
+      return Response.json(
+        {
+          success: false,
+          message:
+            "MQTT publish gagal",
+        },
+        { status: 500 }
+      );
+    }
+
+    /*
+    ========================
+    UPDATE DB PUMP STATUS
+    ========================
+    */
+
+    if (
+      command === "pompa_on" ||
+      command === "ganti_air"
+    ) {
+      await db.query(
+        `
+        UPDATE devices
+        SET pump_status='on'
+        WHERE device_id=?
+      `,
+        [device_id]
+      );
+    }
+
+    if (command === "pompa_off") {
+      await db.query(
+        `
+        UPDATE devices
+        SET pump_status='off'
+        WHERE device_id=?
+      `,
+        [device_id]
+      );
+    }
+
+    /*
+    ========================
+    SAVE LAST UPDATE
+    ========================
+    */
     if (command === "update") {
       await db.query(
         `
         UPDATE devices
-        SET last_update_request = NOW()
-        WHERE device_id = ?
+        SET last_update_request=NOW()
+        WHERE device_id=?
       `,
         [device_id]
       );
@@ -69,14 +99,14 @@ export async function POST(req) {
     });
 
   } catch (err) {
+    console.error(err);
+
     return Response.json(
       {
-        error:
-          err.message,
+        success: false,
+        message: err.message,
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
