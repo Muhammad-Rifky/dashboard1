@@ -58,10 +58,14 @@ export default function DeviceDetail() {
   ========================
   */
   useEffect(() => {
-    if (device?.pump_status) {
-      setPumpStatus(device.pump_status);
-    }
-  }, [device]);
+  if (device?.pump_status) {
+    setPumpStatus(
+      device.pump_status === "on"
+        ? "manual"
+        : "off"
+    );
+  }
+}, [device]);
 
   /*
   ========================
