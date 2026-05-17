@@ -19,7 +19,7 @@ export async function POST(req) {
     });
 
     const mqttRes = await fetch(
-      "http://localhost:3001/publish",
+      "http://76.13.192.195:3001/publish",
       {
         method: "POST",
         headers: {
