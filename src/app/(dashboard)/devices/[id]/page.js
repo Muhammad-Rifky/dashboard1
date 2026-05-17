@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 export default function DeviceDetail() {
@@ -12,6 +12,9 @@ export default function DeviceDetail() {
   const [pumpStatus, setPumpStatus] = useState("off");
   const [cooldown, setCooldown] = useState(0);
   const [duration, setDuration] = useState(600);
+
+  // ✅ Flag: sedang menunggu DB/ESP update, jangan override dari fetch
+  const awaitingRef = useRef(false);
 
   /*
   ========================
@@ -25,11 +28,12 @@ export default function DeviceDetail() {
       });
 
       const data = await res.json();
-
       setDevice(data);
 
-      // FIX: langsung sync dari nilai DB ('off' | 'manual' | 'auto')
-      setPumpStatus(data?.pump_status ?? "off");
+      // ✅ Hanya sync pump status dari DB jika tidak sedang awaiting command
+      if (!awaitingRef.current) {
+        setPumpStatus(data?.pump_status ?? "off");
+      }
 
     } catch (err) {
       console.error(err);
@@ -86,9 +90,7 @@ export default function DeviceDetail() {
     try {
       await fetch("/api/devices/update", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           device_id: device.device_id,
           command,
@@ -96,11 +98,15 @@ export default function DeviceDetail() {
         }),
       });
 
-      // refresh setelah command
-      setTimeout(fetchData, 1500);
+      // ✅ Lepas lock setelah 8 detik — cukup waktu untuk ESP eksekusi & DB update
+      setTimeout(() => {
+        awaitingRef.current = false;
+        fetchData(); // sync sekali setelah lock dilepas
+      }, 8000);
 
     } catch (err) {
       console.error(err);
+      awaitingRef.current = false; // ✅ Lepas lock jika error
     } finally {
       setIsSending(false);
     }
@@ -115,7 +121,6 @@ export default function DeviceDetail() {
     await sendCommand("update");
 
     setCooldown(10);
-
     const interval = setInterval(() => {
       setCooldown((prev) => {
         if (prev <= 1) {
@@ -135,10 +140,9 @@ export default function DeviceDetail() {
   const handleReplaceWater = async () => {
     if (pumpStatus !== "off") return;
 
+    awaitingRef.current = true; // ✅ Kunci sebelum kirim command
+    setPumpStatus("auto");      // optimistic update
     await sendCommand("ganti_air", { duration });
-
-    // Optimistic update sementara menunggu fetchData
-    setPumpStatus("auto");
   };
 
   /*
@@ -149,10 +153,9 @@ export default function DeviceDetail() {
   const handlePumpOn = async () => {
     if (pumpStatus !== "off") return;
 
+    awaitingRef.current = true; // ✅ Kunci sebelum kirim command
+    setPumpStatus("manual");    // optimistic update
     await sendCommand("pompa_on");
-
-    // Optimistic update sementara menunggu fetchData
-    setPumpStatus("manual");
   };
 
   /*
@@ -161,10 +164,9 @@ export default function DeviceDetail() {
   ========================
   */
   const handlePumpOff = async () => {
+    awaitingRef.current = true; // ✅ Kunci sebelum kirim command
+    setPumpStatus("off");       // optimistic update
     await sendCommand("pompa_off");
-
-    // Optimistic update sementara menunggu fetchData
-    setPumpStatus("off");
   };
 
   const isRunning = pumpStatus !== "off";
@@ -186,16 +188,11 @@ export default function DeviceDetail() {
       </button>
 
       {/* TITLE */}
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">
-        Detail Perangkat
-      </h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Detail Perangkat</h1>
 
       {/* DEVICE INFO */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow border mb-6">
-        <h2 className="font-semibold mb-4 text-gray-700">
-          Informasi Perangkat
-        </h2>
-
+        <h2 className="font-semibold mb-4 text-gray-700">Informasi Perangkat</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <p><b>ID:</b> {device.device_id}</p>
           <p><b>Nama:</b> {device.name}</p>
@@ -208,15 +205,13 @@ export default function DeviceDetail() {
           </p>
           <p>
             <b>Pompa:</b>{" "}
-            <span
-              className={
-                pumpStatus === "auto"
-                  ? "text-blue-500 font-semibold"
-                  : pumpStatus === "manual"
-                  ? "text-purple-500 font-semibold"
-                  : "text-gray-500 font-semibold"
-              }
-            >
+            <span className={
+              pumpStatus === "auto"
+                ? "text-blue-500 font-semibold"
+                : pumpStatus === "manual"
+                ? "text-purple-500 font-semibold"
+                : "text-gray-500 font-semibold"
+            }>
               {pumpStatus.toUpperCase()}
             </span>
           </p>
@@ -231,10 +226,7 @@ export default function DeviceDetail() {
 
       {/* SENSOR DESKTOP */}
       <div className="hidden md:block bg-white p-6 rounded-xl shadow border mb-6">
-        <h2 className="font-semibold mb-4 text-gray-700">
-          Data Sensor Terbaru
-        </h2>
-
+        <h2 className="font-semibold mb-4 text-gray-700">Data Sensor Terbaru</h2>
         <table className="w-full text-sm">
           <thead className="bg-gray-100">
             <tr>
@@ -252,15 +244,11 @@ export default function DeviceDetail() {
                 <td className="p-3">{latestSensor.suhu}</td>
                 <td className="p-3">{latestSensor.tds}</td>
                 <td className="p-3">{latestSensor.turbidity_status}</td>
-                <td className="p-3">
-                  {new Date(latestSensor.created_at).toLocaleString("id-ID")}
-                </td>
+                <td className="p-3">{new Date(latestSensor.created_at).toLocaleString("id-ID")}</td>
               </tr>
             ) : (
               <tr>
-                <td colSpan="5" className="p-4 text-center text-gray-500">
-                  Tidak ada data
-                </td>
+                <td colSpan="5" className="p-4 text-center text-gray-500">Tidak ada data</td>
               </tr>
             )}
           </tbody>
@@ -270,17 +258,13 @@ export default function DeviceDetail() {
       {/* SENSOR MOBILE */}
       <div className="md:hidden mb-6">
         <h2 className="font-semibold mb-4 text-gray-700">Sensor Terbaru</h2>
-
         {latestSensor ? (
           <div className="bg-white border rounded-2xl shadow-sm p-4 space-y-2 text-sm">
             <p><b>pH:</b> {Number(latestSensor.ph).toFixed(2)}</p>
             <p><b>Suhu:</b> {latestSensor.suhu}</p>
             <p><b>TDS:</b> {latestSensor.tds}</p>
             <p><b>Kekeruhan:</b> {latestSensor.turbidity_status}</p>
-            <p>
-              <b>Waktu:</b>{" "}
-              {new Date(latestSensor.created_at).toLocaleString("id-ID")}
-            </p>
+            <p><b>Waktu:</b> {new Date(latestSensor.created_at).toLocaleString("id-ID")}</p>
           </div>
         ) : (
           <div className="text-gray-500">Tidak ada data</div>
@@ -302,7 +286,6 @@ export default function DeviceDetail() {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
           <button
             onClick={handleUpdateDevice}
             disabled={cooldown > 0 || isOffline || isSending}
@@ -334,7 +317,6 @@ export default function DeviceDetail() {
           >
             Stop Pompa
           </button>
-
         </div>
       </div>
 
