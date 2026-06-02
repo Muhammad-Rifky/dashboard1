@@ -42,7 +42,7 @@ export default function HistoriPage(){
     let filtered = [...data];
 
     if(selectedDevice){
-      filtered = filtered.filter(d=>d.device_id === selectedDevice);
+      filtered = filtered.filter(d=>d.kode_perangkat === selectedDevice);
     }
 
     if(startDate && endDate){
@@ -71,7 +71,7 @@ export default function HistoriPage(){
     }
 
     const query = new URLSearchParams({
-      device_id: selectedDevice || "",
+      kode_perangkat: selectedDevice || "",
       start: startDate,
       end: endDate
     });
@@ -119,8 +119,8 @@ export default function HistoriPage(){
         >
           <option value="">Semua Device</option>
           {devices.map(d=>(
-            <option key={d.id} value={d.device_id}>
-              {d.name} ({d.device_id})
+            <option key={d.id} value={d.kode_perangkat}>
+              {d.name} ({d.kode_perangkat})
             </option>
           ))}
         </select>
@@ -163,7 +163,7 @@ export default function HistoriPage(){
             <div key={i} className="border rounded-lg p-4 shadow-sm">
 
               <div className="flex justify-between mb-2">
-                <span className="font-semibold">{d.device_id}</span>
+                <span className="font-semibold">{d.kode_perangkat}</span>
                 <span className="text-xs text-gray-500">
                   {new Date(d.created_at).toLocaleDateString("id-ID")}
                 </span>
@@ -214,7 +214,7 @@ export default function HistoriPage(){
             currentData.map((d,i)=>(
               <tr key={i} className="border-b hover:bg-gray-50">
                 <td className="p-3">{indexOfFirst + i + 1}</td>
-                <td className="p-3">{d.device_id}</td>
+                <td className="p-3">{d.kode_perangkat}</td>
                 <td className="p-3">{Number(d.ph).toFixed(2)}</td>
                 <td className="p-3">{Number(d.suhu).toFixed(2)}°C</td>
                 <td className="p-3">{d.tds}</td>
