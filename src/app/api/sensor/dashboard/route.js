@@ -16,7 +16,7 @@ export async function GET(req){
   const device_id = searchParams.get("device_id");
 
   let query = `
-    SELECT device_id, ph, suhu, tds, turbidity, created_at
+    SELECT kode_perangkat, ph, suhu, tds, turbidity, created_at
     FROM sensor_data
   `;
 
