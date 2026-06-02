@@ -45,7 +45,7 @@ export async function GET(request, { params }) {
    WHERE kode_perangkat = ?
    ORDER BY created_at DESC
    LIMIT 10`,
-  [device.device_id]
+  [device.kode_perangkat]
 );
 
     return Response.json({
