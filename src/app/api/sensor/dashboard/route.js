@@ -16,7 +16,7 @@ export async function GET(req){
   const device_id = searchParams.get("device_id");
 
   let query = `
-    SELECT kode_perangkat, ph, suhu, tds, turbidity, created_at
+    SELECT kode_perangkat, ph, suhu, tds, turbidity_adc, created_at
     FROM sensor_data
   `;
 
@@ -24,7 +24,7 @@ export async function GET(req){
 
   // 🔥 FILTER DEVICE
   if(device_id){
-    query += ` WHERE device_id = ?`;
+    query += ` WHERE kode_perangkat = ?`;
     params.push(device_id);
   }
 
