@@ -75,7 +75,7 @@ export default function DeviceDetail() {
   // =========================
   useEffect(() => {
     const socket = io(
-      "http://76.13.192.195:3001",
+      "https://iot-aqua-rifky.duckdns.org",
       {
         transports: [
           "websocket",
