@@ -80,7 +80,7 @@ export default function DevicesPage(){
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
-        device_id:deviceId,
+        kode_perangkat:deviceId,
         name:name,
         location:location,
         user_id:selectedUser
@@ -149,7 +149,7 @@ export default function DevicesPage(){
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
           <input
-            placeholder="Device ID"
+            placeholder="Kode Perangkat"
             value={deviceId}
             onChange={e=>setDeviceId(e.target.value)}
             className="border p-3 rounded w-full"
@@ -200,7 +200,7 @@ export default function DevicesPage(){
           <thead className="bg-gray-100">
             <tr>
               <th className="p-3 text-left">No</th>
-              <th className="p-3 text-left">Device ID</th>
+              <th className="p-3 text-left">Kode Perangkat</th>
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Location</th>
               <th className="p-3 text-center">Status</th>
@@ -213,7 +213,7 @@ export default function DevicesPage(){
             {currentDevices.map((d,i)=>(
               <tr key={d.id} className="border-b hover:bg-gray-50">
                 <td className="p-3">{indexOfFirst + i + 1}</td>
-                <td className="p-3">{d.device_id}</td>
+                <td className="p-3">{d.kode_perangkat}</td>
                 <td className="p-3">{d.name}</td>
                 <td className="p-3">{d.location}</td>
                 <td className="p-3 text-center">
@@ -266,7 +266,7 @@ export default function DevicesPage(){
                 </h3>
 
                 <p className="text-sm text-gray-500 break-all">
-                  {d.device_id}
+                  {d.kode_perangkat}
                 </p>
               </div>
 
