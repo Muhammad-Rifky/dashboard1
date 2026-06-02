@@ -10,11 +10,11 @@ export async function GET(req){
   }
 
   const { searchParams } = new URL(req.url);
-  const device_id = searchParams.get("device_id");
+  const kode_perangkat = searchParams.get("kode_perangkat");
 
   let query = `
   SELECT
-    d.device_id,
+    d.kode_perangkat,
     s.ph,
     s.suhu,
     s.tds,
@@ -22,16 +22,16 @@ export async function GET(req){
     s.created_at
   FROM sensor_data s
   JOIN devices d
-    ON s.kode_perangkat = d.device_id
+    ON s.kode_perangkat = d.kode_perangkat
   WHERE 1=1
 `;
 
   let params = [];
 
   // 🔥 FILTER DEVICE
-  if(device_id){
-    query += " AND s.device_id = ?";
-    params.push(device_id);
+  if(kode_perangkat){
+    query += " AND s.kode_perangkat = ?";
+    params.push(kode_perangkat);
   }
 
   // 🔥 FILTER ROLE
