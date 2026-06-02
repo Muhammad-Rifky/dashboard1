@@ -13,11 +13,18 @@ export async function GET(req){
   const device_id = searchParams.get("device_id");
 
   let query = `
-    SELECT d.device_id, s.ph, s.suhu, s.tds,s.turbidity_status, s.created_at
-    FROM sensor_data s
-    JOIN devices d ON s.device_id = d.device_id
-    WHERE 1=1
-  `;
+  SELECT
+    d.device_id,
+    s.ph,
+    s.suhu,
+    s.tds,
+    s.turbidity_adc,
+    s.created_at
+  FROM sensor_data s
+  JOIN devices d
+    ON s.kode_perangkat = d.device_id
+  WHERE 1=1
+`;
 
   let params = [];
 
