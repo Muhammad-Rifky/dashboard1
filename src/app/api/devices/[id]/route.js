@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
     const [devices] = await db.execute(
       `SELECT 
           id,
-          device_id,
+          kode_perangkat,
           name,
           location,
           user_id,
@@ -40,13 +40,13 @@ export async function GET(request, { params }) {
 
         // SENSOR
     const [sensor] = await db.execute(
-      `SELECT ph, suhu, tds, turbidity_status, created_at
-       FROM sensor_data
-       WHERE device_id = ?
-       ORDER BY created_at DESC
-       LIMIT 10`,
-      [device.device_id]
-    );
+  `SELECT ph, suhu, tds, turbidity_adc, created_at
+   FROM sensor_data
+   WHERE kode_perangkat = ?
+   ORDER BY created_at DESC
+   LIMIT 10`,
+  [device.device_id]
+);
 
     return Response.json({
       ...device,
