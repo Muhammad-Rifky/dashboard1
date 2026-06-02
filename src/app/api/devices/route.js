@@ -17,7 +17,7 @@ export async function GET() {
   let query = `
     SELECT 
       d.id,
-      d.device_id,
+      d.kode_perangkat,
       d.name,
       d.location,
       d.user_id,
