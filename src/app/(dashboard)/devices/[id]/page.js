@@ -92,8 +92,8 @@ export default function DeviceDetail() {
         );
 
         if (
-          payload.device_id ===
-            device?.device_id &&
+          payload.kode_perangkat ===
+            device?.kode_perangkat &&
           isUpdating
         ) {
           clearTimeout(
@@ -117,7 +117,7 @@ export default function DeviceDetail() {
       socket.disconnect();
     };
   }, [
-    device?.device_id,
+    device?.kode_perangkat,
     isUpdating,
   ]);
 
@@ -151,7 +151,7 @@ export default function DeviceDetail() {
       extra = {}
     ) => {
       if (
-        !device?.device_id
+        !device?.kode_perangkat
       )
         return;
 
@@ -174,8 +174,8 @@ export default function DeviceDetail() {
             },
             body: JSON.stringify(
               {
-                device_id:
-                  device.device_id,
+                kode_perangkat:
+                  device.kode_perangkat,
                 command,
                 ...extra,
               }
@@ -342,7 +342,7 @@ export default function DeviceDetail() {
           <p>
             <b>ID:</b>{" "}
             {
-              device.device_id
+              device.kode_perangkat
             }
           </p>
 
