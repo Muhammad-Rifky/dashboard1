@@ -28,7 +28,7 @@ export default function DashboardPage() {
     .then(res=>{
       setDevices(res);
       if(res.length > 0){
-        setSelectedDevice(res[0].device_id);
+        setSelectedDevice(res[0].kode_perangkat);
       }
     });
   },[]);
@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
       {/* 🔥 JUDUL */}
       <h1 className="text-2xl font-bold text-black mb-2">
-        Data Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"} Hari Ini
+        Data Kualitas Air {devices.find(d=>d.kode_perangkat===selectedDevice)?.name || "-"} Hari Ini
       </h1>
 
       {/* 🔥 DROPDOWN */}
@@ -112,8 +112,8 @@ export default function DashboardPage() {
           className="p-2 rounded bg-white shadow border-gray-200 border-l-4"
         >
           {devices.map(d=>(
-            <option key={d.id} value={d.device_id}>
-              {d.name} ({d.device_id})
+            <option key={d.id} value={d.kode_perangkat}>
+              {d.name} ({d.kode_perangkat})
             </option>
           ))}
         </select>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-10">
 
         <h1 className="text-2xl font-bold text-black mb-2">
-          Grafik Kualitas Air {devices.find(d=>d.device_id===selectedDevice)?.name || "-"} Dalam 7 Hari Terakhir
+          Grafik Kualitas Air {devices.find(d=>d.kode_perangkat===selectedDevice)?.name || "-"} Dalam 7 Hari Terakhir
         </h1>
 
         <Chart title="Grafik pH" data={data.history} dataKey="ph" />
