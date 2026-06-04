@@ -5,7 +5,7 @@ export async function POST(req) {
     const body = await req.json();
 
     const {
-      device_id,
+      kode_perangkat,
       command,
       duration = 0,
     } = body;
@@ -16,7 +16,7 @@ export async function POST(req) {
     ========================
     */
 
-    const topic = `iot/control/${device_id}`;
+    const topic = `iot/control/${kode_perangkat}`;
 
     const message = JSON.stringify({
       command,
@@ -80,9 +80,9 @@ export async function POST(req) {
         `
         UPDATE devices
         SET pump_status=?
-        WHERE device_id=?
+        WHERE kode_perangkat=?
       `,
-        [pumpStatus, device_id]
+        [pumpStatus, kode_perangkat]
       );
     }
 
@@ -100,10 +100,10 @@ export async function POST(req) {
       await db.query(
         `
         INSERT INTO history_control
-        (device_id, action, source)
+        (kode_perangkat, action, source)
         VALUES (?, ?, ?)
       `,
-        [device_id, command, "manual"]
+        [kode_perangkat, command, "manual"]
       );
     }
 
@@ -118,9 +118,9 @@ export async function POST(req) {
         `
         UPDATE devices
         SET last_update_request=NOW()
-        WHERE device_id=?
+        WHERE kode_perangkat=?
       `,
-        [device_id]
+        [kode_perangkat]
       );
     }
 
