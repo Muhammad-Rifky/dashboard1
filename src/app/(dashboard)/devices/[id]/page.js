@@ -31,7 +31,7 @@ export default function DeviceDetail() {
 
       const data = await res.json();
       setDevice(data);
-      deviceIdRef.current = data?.device_id;
+      deviceIdRef.current = data?.kode_perangkat;
 
       // sync pump status dari DB
       setPumpStatus(data?.pump_status ?? "off");
@@ -67,7 +67,7 @@ export default function DeviceDetail() {
 
       // FIX: baca dari ref, bukan dari closure state
       if (
-        payload.device_id === deviceIdRef.current &&
+        payload.kode_perangkat === deviceIdRef.current &&
         isUpdatingRef.current
       ) {
         clearTimeout(timeoutRef.current);
@@ -103,7 +103,7 @@ export default function DeviceDetail() {
   // SEND COMMAND
   // =========================
   const sendCommand = async (command, extra = {}) => {
-    if (!device?.device_id) return;
+    if (!device?.kode_perangkat) return;
     if (isSending) return;
 
     setIsSending(true);
@@ -113,7 +113,7 @@ export default function DeviceDetail() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          device_id: device.device_id,
+          kode_perangkat: device.kode_perangkat,
           command,
           ...extra,
         }),
@@ -206,7 +206,7 @@ export default function DeviceDetail() {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <p><b>ID:</b> {device.device_id}</p>
+          <p><b>ID:</b> {device.kode_perangkat}</p>
           <p><b>Nama:</b> {device.name}</p>
           <p><b>Lokasi:</b> {device.location}</p>
           <p>
