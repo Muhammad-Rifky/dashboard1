@@ -17,13 +17,13 @@ export default function HistoriPage(){
   const [currentPage,setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
 
-  // 🔥 LOAD DATA
+  //  LOAD DATA
   useEffect(()=>{
     fetch("/api/sensor/history")
     .then(res=>res.json())
     .then(res=>{
       setData(res);
-      setFilteredData(res); // 🔥 jangan di slice
+      setFilteredData(res); 
     });
 
     fetch("/api/devices")
@@ -34,7 +34,7 @@ export default function HistoriPage(){
 
   },[]);
 
-  // 🔥 FILTER
+  //  FILTER
   useEffect(()=>{
 
     setCurrentPage(1);
@@ -56,13 +56,13 @@ export default function HistoriPage(){
 
   },[selectedDevice,startDate,endDate,data]);
 
-  // 🔥 PAGINATION
+  //  PAGINATION
   const indexOfLast = currentPage * rowsPerPage;
   const indexOfFirst = indexOfLast - rowsPerPage;
   const currentData = filteredData.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
 
-  // 🔥 EXPORT CSV
+  //  EXPORT CSV
   const exportCSV = async () => {
 
     if(!startDate || !endDate){
