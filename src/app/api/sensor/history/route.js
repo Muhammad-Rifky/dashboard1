@@ -18,7 +18,7 @@ export async function GET(req){
     s.ph,
     s.suhu,
     s.tds,
-    s.turbidity_adc,
+    s.turbidity_status,
     s.created_at
   FROM sensor_data s
   JOIN devices d
@@ -28,13 +28,13 @@ export async function GET(req){
 
   let params = [];
 
-  // 🔥 FILTER DEVICE
+  //  FILTER DEVICE
   if(kode_perangkat){
     query += " AND s.kode_perangkat = ?";
     params.push(kode_perangkat);
   }
 
-  // 🔥 FILTER ROLE
+  //  FILTER ROLE
   if(user.role !== "superadmin"){
     query += " AND d.user_id = ?";
     params.push(user.id);
