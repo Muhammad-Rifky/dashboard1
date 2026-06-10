@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
 
         // SENSOR
     const [sensor] = await db.execute(
-  `SELECT ph, suhu, tds, turbidity_adc, created_at
+  `SELECT ph, suhu, tds, turbidity_status, created_at
    FROM sensor_data
    WHERE kode_perangkat = ?
    ORDER BY created_at DESC
