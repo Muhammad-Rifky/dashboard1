@@ -228,10 +228,7 @@ export default function DeviceDetail() {
             </span>
           </p>
           <p>
-            <b>Last Seen:</b>{" "}
-            {device.last_seen
-              ? new Date(device.last_seen).toLocaleString("id-ID")
-              : "-"}
+            <b>Last Seen:</b> {device.last_seen || "-"}
           </p>
         </div>
       </div>
