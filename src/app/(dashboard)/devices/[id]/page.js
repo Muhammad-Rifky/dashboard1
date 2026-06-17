@@ -58,13 +58,22 @@ export default function DeviceDetail() {
   // FIX: pakai ref, jangan taruh device/isUpdating di dependency array
   // =========================
   useEffect(() => {
-    const socket = io("http://76.13.192.195:3001", {
-      transports: ["websocket"],
+    const socket = io(
+      "https://iot-aqua-rifky.duckdns.org",
+      {
+        transports: ["websocket"]
+      }
+    );
+    socket.on("connect", () => {
+      console.log("SOCKET CONNECTED");
     });
-
+    
+    socket.on("connect_error", (err) => {
+      console.log("SOCKET ERROR:", err.message);
+    });
+    
     socket.on("sensor_update", (payload) => {
-      console.log("SOCKET:", payload);
-
+      console.log("SENSOR UPDATE RECEIVED", payload);
       // FIX: baca dari ref, bukan dari closure state
       if (
         payload.kode_perangkat === deviceIdRef.current &&
