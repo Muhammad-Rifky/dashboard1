@@ -32,6 +32,10 @@ export default function RootLayout({
         className={`${inter.variable} ${montserrat.variable} antialiased`}
       >
         {children}
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          />
       </body>
     </html>
   );
