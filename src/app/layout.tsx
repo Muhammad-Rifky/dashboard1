@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import {Toaster} from "react-hot-toast;
 import {Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 
