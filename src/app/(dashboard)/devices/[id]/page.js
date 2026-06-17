@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import toast from "react-hot-toast";
 import { useParams } from "next/navigation";
 import { io } from "socket.io-client";
 
@@ -87,7 +88,7 @@ export default function DeviceDetail() {
         setIsUpdating(false);
 
         fetchData();
-        showNotification("Data berhasil diperbarui","success");
+        toast.success("Data berhasil diperbarui");
       }
     });
 
@@ -134,14 +135,6 @@ export default function DeviceDetail() {
       setIsSending(false);
     }
   };
-  // Notification
-  const showNotification = (message,type ="success") => {
-    setNotification({message,type});
-
-    setTimeout(() => {
-      setNotification(null);
-    }, 2000);
-  };
 
   // =========================
   // UPDATE DEVICE
@@ -158,7 +151,7 @@ export default function DeviceDetail() {
     timeoutRef.current = setTimeout(() => {
       isUpdatingRef.current = false;
       setIsUpdating(false);
-      showNotification("Gagal memperbarui data","error");
+      toast.error("Gagal memperbarui data. Pastikan perangkat terhubung dan coba lagi.");
     }, 30000);
   };
 
@@ -200,23 +193,6 @@ export default function DeviceDetail() {
   if (loading || !device) {
     return <div className="p-6">Loading...</div>;
   }
-  {notification && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      <div
-        className={`
-          px-6 py-4 rounded-xl shadow-xl text-white font-medium
-          animate-pulse
-          ${
-            notification.type === "success"
-              ? "bg-green-500"
-              : "bg-red-500"
-          }
-        `}
-      >
-        {notification.message}
-      </div>
-    </div>
-  )};
 
   return (
     <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-gray-200 w-full max-w-screen overflow-x-hidden min-h-[100dvh]">
