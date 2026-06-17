@@ -13,6 +13,7 @@ export default function DeviceDetail() {
   const [loading, setLoading] = useState(true);
   const [pumpStatus, setPumpStatus] = useState("off");
   const [duration, setDuration] = useState(600);
+  const [notification, setNotification] = useState(null);
 
   const timeoutRef = useRef(null);
 
@@ -86,7 +87,7 @@ export default function DeviceDetail() {
         setIsUpdating(false);
 
         fetchData();
-        alert("Data berhasil diperbarui");
+        showNotification("Data berhasil diperbarui","success");
       }
     });
 
@@ -133,6 +134,14 @@ export default function DeviceDetail() {
       setIsSending(false);
     }
   };
+  // Notification
+  const showNotification = (message,type ="success") => {
+    setNotification({message,type});
+
+    setTimeout(() => {
+      setNotification(null);
+    }, 2000);
+  };
 
   // =========================
   // UPDATE DEVICE
@@ -149,7 +158,7 @@ export default function DeviceDetail() {
     timeoutRef.current = setTimeout(() => {
       isUpdatingRef.current = false;
       setIsUpdating(false);
-      alert("Gagal memperbarui data");
+      showNotification("Gagal memperbarui data","error");
     }, 30000);
   };
 
@@ -191,6 +200,23 @@ export default function DeviceDetail() {
   if (loading || !device) {
     return <div className="p-6">Loading...</div>;
   }
+  {notification && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      <div
+        className={`
+          px-6 py-4 rounded-xl shadow-xl text-white font-medium
+          animate-pulse
+          ${
+            notification.type === "success"
+              ? "bg-green-500"
+              : "bg-red-500"
+          }
+        `}
+      >
+        {notification.message}
+      </div>
+    </div>
+  )};
 
   return (
     <div className="bg-white p-4 sm:p-6 rounded-xl shadow border-l-4 border-gray-200 w-full max-w-screen overflow-x-hidden min-h-[100dvh]">
@@ -368,6 +394,7 @@ export default function DeviceDetail() {
           </button>
 
         </div>
+              
       </div>
 
     </div>
