@@ -48,7 +48,6 @@ export default function DashboardPage() {
     .then(res=>{
       if(res) setData(res);
     });
-
     socket = io("https://iot-aqua-rifky.duckdns.org",{ 
       transports: ["websocket"]});
 

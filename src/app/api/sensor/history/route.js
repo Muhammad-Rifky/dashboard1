@@ -29,7 +29,7 @@ export async function GET(req){
 
   // 🔥 FILTER ROLE
   if(user.role !== "admin"){
-    query += " AND d.user_id = ?";
+   query += " AND d.user_id = ?";
     params.push(user.id);
   }
 

@@ -16,7 +16,8 @@ export async function GET(req){
   const kode_perangkat = searchParams.get("kode_perangkat");
 
   let query = `
-    SELECT kode_perangkat, ph, suhu, tds, turbidity_status, created_at
+    SELECT kode_perangkat, ph, suhu, tds, turbidity_adc, created_at
+
     FROM sensor_data
   `;
 
