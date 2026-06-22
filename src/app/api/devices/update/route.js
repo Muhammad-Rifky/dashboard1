@@ -20,7 +20,6 @@ export async function POST(req) {
           duration
         }),
       }),
-=======
 
     const {
       kode_perangkat,
