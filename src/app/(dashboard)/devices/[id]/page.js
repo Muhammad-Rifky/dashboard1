@@ -14,7 +14,7 @@ export default function DeviceDetail() {
   const [loading, setLoading] = useState(true);
   const [pumpStatus, setPumpStatus] = useState("off");
   const [duration, setDuration] = useState(600);
-
+  const latestAction = device?.actions?.[0];
   const fetchData = async () => {
     try {
       const res = await fetch(`/api/devices/${params.id}`, {
@@ -63,7 +63,7 @@ export default function DeviceDetail() {
           "application/json",
       },
       body: JSON.stringify({
-        device_id: device.device_id,
+        device_id: device.id,
         command,
         ...extra,
       }),
