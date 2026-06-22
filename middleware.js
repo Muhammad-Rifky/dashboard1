@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 
 export function middleware(req){
 
-  const session = req.cookies.get("session");
+  const token = req.cookies.get("token")?.value;
 
-  if(!session){
+  if(!token){
 
     return NextResponse.redirect(new URL("/login",req.url));
 

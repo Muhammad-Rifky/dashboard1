@@ -17,7 +17,7 @@ export async function GET() {
   let query = `
     SELECT 
       d.id,
-      d.device_id,
+      d.kode_perangkat,
       d.name,
       d.location,
       d.user_id,
@@ -30,7 +30,7 @@ export async function GET() {
   let params = [];
 
   // filter user
-  if (user.role !== "superadmin") {
+  if (user.role !== "admin") {
     query += " AND d.user_id = ?";
     params.push(user.id);
   }

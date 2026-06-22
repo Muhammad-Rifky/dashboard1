@@ -15,8 +15,8 @@ export async function GET() {
       );
     }
 
-    // 🔹 Hanya superadmin yang bisa mengakses
-    if (user.role !== "superadmin") {
+    // 🔹 Hanya admin yang bisa mengakses
+    if (user.role !== "admin") {
       return NextResponse.json(
         { error: "Forbidden" },
         { status: 403 }

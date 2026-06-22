@@ -32,7 +32,7 @@ export default function DevicesPage(){
   const [selectedId,setSelectedId] = useState(null);
 
   function loadDevices(){
-    fetch("/api/devices", { cache: "no-store" }) // 🔥 anti cache
+    fetch("/api/devices", { cache: "no-store" }) // anti cache
     .then(res=>res.json())
     .then(res=>setDevices(res));
   }
@@ -44,7 +44,7 @@ export default function DevicesPage(){
   },[]);
 
   useEffect(()=>{
-    if(user?.role === "superadmin"){
+    if(user?.role === "admin"){
       fetch("/api/users")
         .then(res=>res.json())
         .then(data=>setUsers(data));
@@ -54,7 +54,7 @@ export default function DevicesPage(){
   useEffect(()=>{
     loadDevices();
 
-    // 🔥 polling tiap 5 detik
+    // polling tiap 5 detik
     const interval = setInterval(() => {
       loadDevices();
     }, 5000);
@@ -62,7 +62,7 @@ export default function DevicesPage(){
     return () => clearInterval(interval);
   },[]);
 
-  // 🔥 RESET PAGE kalau data berubah
+  // RESET PAGE kalau data berubah
   useEffect(()=>{
     setCurrentPage(1);
   },[devices]);
@@ -80,7 +80,7 @@ export default function DevicesPage(){
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
-        device_id:deviceId,
+        kode_perangkat:deviceId,
         name:name,
         location:location,
         user_id:selectedUser
@@ -149,7 +149,7 @@ export default function DevicesPage(){
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
           <input
-            placeholder="Device ID"
+            placeholder="Kode Perangkat"
             value={deviceId}
             onChange={e=>setDeviceId(e.target.value)}
             className="border p-3 rounded w-full"
@@ -169,7 +169,7 @@ export default function DevicesPage(){
             className="border p-3 rounded w-full"
           />
 
-          {user.role === "superadmin" && (
+          {user.role === "admin" && (
             <select
               value={selectedUser}
               onChange={e=>setSelectedUser(e.target.value)}
@@ -200,7 +200,7 @@ export default function DevicesPage(){
           <thead className="bg-gray-100">
             <tr>
               <th className="p-3 text-left">No</th>
-              <th className="p-3 text-left">Device ID</th>
+              <th className="p-3 text-left">Kode Perangkat</th>
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Location</th>
               <th className="p-3 text-center">Status</th>
@@ -213,7 +213,7 @@ export default function DevicesPage(){
             {currentDevices.map((d,i)=>(
               <tr key={d.id} className="border-b hover:bg-gray-50">
                 <td className="p-3">{indexOfFirst + i + 1}</td>
-                <td className="p-3">{d.device_id}</td>
+                <td className="p-3">{d.kode_perangkat}</td>
                 <td className="p-3">{d.name}</td>
                 <td className="p-3">{d.location}</td>
                 <td className="p-3 text-center">
@@ -266,7 +266,7 @@ export default function DevicesPage(){
                 </h3>
 
                 <p className="text-sm text-gray-500 break-all">
-                  {d.device_id}
+                  {d.kode_perangkat}
                 </p>
               </div>
 
@@ -321,7 +321,7 @@ export default function DevicesPage(){
         ))}
       </div>
 
-      {/* 🔥 PAGINATION */}
+      {/* PAGINATION */}
       <div className="flex justify-center items-center gap-2 mt-6 flex-wrap">
 
         <button
@@ -356,7 +356,7 @@ export default function DevicesPage(){
 
       </div>
 
-      {/* 🔥 MODAL */}
+      {/* MODAL */}
       {showConfirm && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-9999"

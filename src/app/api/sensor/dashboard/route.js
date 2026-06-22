@@ -3,9 +3,9 @@ import db from "../../../lib/db";
 
 export async function GET(req){
 
-  const session = req.cookies.get("session");
+  const token = req.cookies.get("token");
 
-  if(!session){
+  if(!token){
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 }
@@ -13,19 +13,19 @@ export async function GET(req){
   }
 
   const { searchParams } = new URL(req.url);
-  const device_id = searchParams.get("device_id");
+  const kode_perangkat = searchParams.get("kode_perangkat");
 
   let query = `
-    SELECT device_id, ph, suhu, tds, turbidity, created_at
+    SELECT kode_perangkat, ph, suhu, tds, turbidity_status, created_at
     FROM sensor_data
   `;
 
   let params = [];
 
   // 🔥 FILTER DEVICE
-  if(device_id){
-    query += ` WHERE device_id = ?`;
-    params.push(device_id);
+  if(kode_perangkat){
+    query += ` WHERE kode_perangkat = ?`;
+    params.push(kode_perangkat);
   }
 
   query += ` ORDER BY created_at DESC LIMIT 14`;
@@ -35,7 +35,7 @@ export async function GET(req){
   const avgPH = rows.length ? rows.reduce((a,b)=>a+b.ph,0)/rows.length : 0;
   const avgSuhu = rows.length ? rows.reduce((a,b)=>a+b.suhu,0)/rows.length : 0;
   const avgTDS = rows.length ? rows.reduce((a,b)=>a+b.tds,0)/rows.length : 0;
-  const avgTurbidity = rows.length ? rows.reduce((a,b)=>a+b.turbidity,0)/rows.length : 0;
+  const avgTurbidity = rows.length ? rows.reduce((a,b)=>a+b.turbidity_status,0)/rows.length : 0;
 
   return NextResponse.json({
     average:{

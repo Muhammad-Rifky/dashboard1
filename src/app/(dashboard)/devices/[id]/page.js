@@ -1,24 +1,51 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import toast from "react-hot-toast";
 import { useParams } from "next/navigation";
+import { io } from "socket.io-client";
 
 export default function DeviceDetail() {
   const params = useParams();
 
+  const [isSending, setIsSending] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [device, setDevice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pumpStatus, setPumpStatus] = useState("off");
-  const [cooldown, setCooldown] = useState(0);
   const [duration, setDuration] = useState(600);
+  const [notification, setNotification] = useState(null);
+  const [latestAction, setLatestAction] = useState(null);
 
+  const timeoutRef = useRef(null);
+
+  // ref untuk track isUpdating agar selalu up-to-date di dalam socket closure
+  const isUpdatingRef = useRef(false);
+  const deviceIdRef = useRef(null);
+
+  // =========================
+  // FETCH DATA
+  // =========================
   const fetchData = async () => {
     try {
       const res = await fetch(`/api/devices/${params.id}`, {
         cache: "no-store",
       });
+
       const data = await res.json();
+
       setDevice(data);
+
+      setLatestAction(
+        data.latestAction || null
+      );
+
+      deviceIdRef.current =
+        data?.kode_perangkat;
+
+      // sync pump status dari DB
+      setPumpStatus(data?.pump_status ?? "off");
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -30,112 +57,187 @@ export default function DeviceDetail() {
     if (params?.id) fetchData();
   }, [params?.id]);
 
+  // fallback polling
   useEffect(() => {
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const latestSensor = device?.sensor?.reduce((latest, item) => {
-    if (!latest) return item;
-
-    return new Date(item.created_at) >
-      new Date(latest.created_at)
-      ? item
-      : latest;
-  }, null);
-
-  const sendCommand = async (
-    command,
-    extra = {}
-  ) => {
-    if (!device?.device_id) return;
-
-    await fetch("/api/devices/update", {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify({
-        device_id: device.device_id,
-        command,
-        ...extra,
-      }),
+  // =========================
+  // SOCKET.IO
+  // pakai ref untuk track deviceId dan isUpdating agar selalu up-to-date di dalam closure socket
+  // =========================
+  useEffect(() => {
+    const socket = io(
+      "192.168.56.1:3000",
+      {
+        transports: ["websocket"]
+      }
+    );
+    socket.on("connect", () => {
+      console.log("SOCKET CONNECTED");
     });
-  };
+    
+    socket.on("connect_error", (err) => {
+      console.log("SOCKET ERROR:", err.message);
+    });
+    
+    socket.on("sensor_update", (payload) => {
+      console.log("SENSOR UPDATE RECEIVED", payload);
+      // FIX: baca dari ref, bukan dari closure state
+      if (
+        payload.kode_perangkat === deviceIdRef.current &&
+        isUpdatingRef.current
+      ) {
+        clearTimeout(timeoutRef.current);
 
-  const handleUpdateDevice =
-    async () => {
-      await sendCommand("update");
+        // FIX: update ref dan state bersamaan
+        isUpdatingRef.current = false;
+        setIsUpdating(false);
 
-      setCooldown(10);
+        fetchData();
+        toast.success("Data berhasil diperbarui");
+      }
+    });
 
-      const interval = setInterval(() => {
-        setCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      setTimeout(fetchData, 2000);
+    return () => {
+      socket.disconnect();
     };
+  }, []); // intentionally kosong — socket hanya dibuat sekali
 
-  const handleReplaceWater =
-    async () => {
-      if (pumpStatus !== "off")
-        return;
+  // =========================
+  // LATEST SENSOR
+  // =========================
+  const latestSensor = device?.sensor?.reduce(
+    (latest, item) => {
+      if (!latest) return item;
+      return new Date(item.created_at) > new Date(latest.created_at)
+        ? item
+        : latest;
+    },
+    null
+  );
 
-      await sendCommand(
-        "ganti_air",
+  // =========================
+  // SEND COMMAND
+  // =========================
+  const sendCommand = async (command, extra = {}) => {
+    if (!device?.kode_perangkat) return;
+    if (isSending) return;
+
+    setIsSending(true);
+
+    try {
+      await fetch("/api/devices/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kode_perangkat: device.kode_perangkat,
+          command,
+          ...extra,
+        }),
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+  //handle confirm water change
+  const handleConfirmWaterChange = async () => {
+    try {
+
+      const res = await fetch(
+        `/api/devices/control`,
         {
-          duration,
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            fuzzy_result_id:
+              latestAction.id
+          })
         }
       );
 
-      setPumpStatus("auto");
+      if (res.ok) {
 
-      setTimeout(() => {
-        setPumpStatus("off");
-      }, duration * 1000);
-    };
+        toast.success(
+          "Penggantian air berhasil dikonfirmasi"
+        );
 
-  const handlePumpOn =
-    async () => {
-      if (pumpStatus !== "off")
-        return;
+        fetchData();
 
-      await sendCommand(
-        "pompa_on"
+      }
+
+    } catch (err) {
+
+      console.error(err);
+
+      toast.error(
+        "Gagal menyimpan konfirmasi"
       );
 
-      setPumpStatus("manual");
-    };
+    }
+  };
+  // =========================
+  // UPDATE DEVICE
+  // =========================
+  const handleUpdateDevice = async () => {
+    if (isUpdating) return;
 
-  const handlePumpOff =
-    async () => {
-      await sendCommand(
-        "pompa_off"
-      );
+    await sendCommand("update");
 
+    // FIX: update ref dan state bersamaan
+    isUpdatingRef.current = true;
+    setIsUpdating(true);
+
+    timeoutRef.current = setTimeout(() => {
+      isUpdatingRef.current = false;
+      setIsUpdating(false);
+      toast.error("Gagal memperbarui data. Pastikan perangkat terhubung dan coba lagi.");
+    }, 30000);
+  };
+
+  // =========================
+  // GANTI AIR
+  // =========================
+  const handleReplaceWater = async () => {
+    if (pumpStatus !== "off") return;
+
+    await sendCommand("ganti_air", { duration });
+    setPumpStatus("auto");
+
+    setTimeout(() => {
       setPumpStatus("off");
-    };
+    }, duration * 1000);
+  };
 
-  const isRunning =
-    pumpStatus !== "off";
+  // =========================
+  // POMPA ON
+  // =========================
+  const handlePumpOn = async () => {
+    if (pumpStatus !== "off") return;
 
-  const isOffline =
-    device?.status !==
-    "online";
+    await sendCommand("pompa_on");
+    setPumpStatus("manual");
+  };
+
+  // =========================
+  // POMPA OFF
+  // =========================
+  const handlePumpOff = async () => {
+    await sendCommand("pompa_off");
+    setPumpStatus("off");
+  };
+
+  const isRunning = pumpStatus !== "off";
+  const isOffline = device?.status !== "online";
 
   if (loading || !device) {
-    return (
-      <div className="p-6">
-        Loading...
-      </div>
-    );
+    return <div className="p-6">Loading...</div>;
   }
 
   return (
@@ -143,9 +245,7 @@ export default function DeviceDetail() {
 
       {/* BACK */}
       <button
-        onClick={() =>
-          window.history.back()
-        }
+        onClick={() => window.history.back()}
         className="mb-4 w-full sm:w-auto bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-700"
       >
         ← Kembali
@@ -156,71 +256,37 @@ export default function DeviceDetail() {
         Detail Perangkat
       </h1>
 
-      {/* DEVICE INFO */}
+      {/* INFO */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow border mb-6">
         <h2 className="font-semibold mb-4 text-gray-700">
           Informasi Perangkat
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-
-          <p>
-            <b>ID:</b>{" "}
-            {device.device_id}
-          </p>
-
-          <p>
-            <b>Nama:</b>{" "}
-            {device.name}
-          </p>
-
-          <p>
-            <b>Lokasi:</b>{" "}
-            {device.location}
-          </p>
-
+          <p><b>ID:</b> {device.kode_perangkat}</p>
+          <p><b>Nama:</b> {device.name}</p>
+          <p><b>Lokasi:</b> {device.location}</p>
           <p>
             <b>Status:</b>{" "}
-            <span
-              className={
-                device.status ===
-                "online"
-                  ? "text-green-500 font-semibold"
-                  : "text-red-500 font-semibold"
-              }
-            >
+            <span className={device.status === "online" ? "text-green-500 font-semibold" : "text-red-500 font-semibold"}>
               {device.status}
             </span>
           </p>
-
           <p>
             <b>Pompa:</b>{" "}
-            <span
-              className={
-                pumpStatus ===
-                "auto"
-                  ? "text-blue-500 font-semibold"
-                  : pumpStatus ===
-                    "manual"
-                  ? "text-purple-500 font-semibold"
-                  : "text-gray-500 font-semibold"
-              }
-            >
+            <span className={
+              pumpStatus === "auto"
+                ? "text-blue-500 font-semibold"
+                : pumpStatus === "manual"
+                ? "text-purple-500 font-semibold"
+                : "text-gray-500 font-semibold"
+            }>
               {pumpStatus.toUpperCase()}
             </span>
           </p>
-
           <p>
-            <b>Last Seen:</b>{" "}
-            {device.last_seen
-              ? new Date(
-                  device.last_seen
-                ).toLocaleString(
-                  "id-ID"
-                )
-              : "-"}
+            <b>Last Seen:</b> {device.last_seen || "-"}
           </p>
-
         </div>
       </div>
 
@@ -228,66 +294,37 @@ export default function DeviceDetail() {
       <div className="hidden md:block bg-white p-6 rounded-xl shadow border mb-6">
         <h2 className="font-semibold mb-4 text-gray-700">
           Data Sensor Terbaru
+          {isUpdating && (
+            <span className="ml-2 text-xs text-green-500 font-normal animate-pulse">
+              Menunggu data baru...
+            </span>
+          )}
         </h2>
 
         <table className="w-full text-sm">
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-3 text-left">
-                pH
-              </th>
-              <th className="p-3 text-left">
-                Suhu
-              </th>
-              <th className="p-3 text-left">
-                TDS
-              </th>
-              <th className="p-3 text-left">
-                Kekeruhan
-              </th>
-              <th className="p-3 text-left">
-                Waktu
-              </th>
+              <th className="p-3 text-left">pH</th>
+              <th className="p-3 text-left">Suhu</th>
+              <th className="p-3 text-left">TDS</th>
+              <th className="p-3 text-left">Kekeruhan</th>
+              <th className="p-3 text-left">Waktu</th>
             </tr>
           </thead>
-
           <tbody>
             {latestSensor ? (
               <tr className="border-b">
+                <td className="p-3">{Number(latestSensor.ph).toFixed(2)}</td>
+                <td className="p-3">{latestSensor.suhu}</td>
+                <td className="p-3">{latestSensor.tds}</td>
+                <td className="p-3">{latestSensor.turbidity_status}</td>
                 <td className="p-3">
-                  {Number(
-                    latestSensor.ph
-                  ).toFixed(2)}
-                </td>
-                <td className="p-3">
-                  {
-                    latestSensor.suhu
-                  }
-                </td>
-                <td className="p-3">
-                  {
-                    latestSensor.tds
-                  }
-                </td>
-                <td className="p-3">
-                  {
-                    latestSensor.turbidity_status
-                  }
-                </td>
-                <td className="p-3">
-                  {new Date(
-                    latestSensor.created_at
-                  ).toLocaleString(
-                    "id-ID"
-                  )}
+                  {new Date(latestSensor.created_at).toLocaleString("id-ID")}
                 </td>
               </tr>
             ) : (
               <tr>
-                <td
-                  colSpan="5"
-                  className="p-4 text-center text-gray-500"
-                >
+                <td colSpan="5" className="p-4 text-center text-gray-500">
                   Tidak ada data
                 </td>
               </tr>
@@ -295,79 +332,73 @@ export default function DeviceDetail() {
           </tbody>
         </table>
       </div>
+      {/*action card approved*/}
+      <div className="bg-white p-6 rounded-xl shadow border mb-6">
+        <h2 className="font-semibold mb-4 text-gray-700">
+          Tindakan yang Diperlukan
+        </h2>
 
+        {latestAction?.status === "pending" && latestAction?.action === "Ganti Air" ? (
+          <div className="border border-red-300 bg-red-50 rounded-lg p-4">
+            <p className="font-semibold text-red-600">
+              ⚠️ Kualitas air buruk
+            </p>
+
+            <p className="text-sm mt-2 text-gray-700">
+              Sistem mendeteksi kualitas air buruk.
+              Segera lakukan penggantian air kolam.
+            </p>
+
+            <button
+              onClick={handleConfirmWaterChange}
+              className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            >
+              ✓ Air Sudah Diganti
+            </button>
+          </div>
+        ) : (
+          <div className="text-gray-500">
+            Tidak ada action yang harus dilakukan.
+          </div>
+        )}
+      </div>
       {/* SENSOR MOBILE */}
       <div className="md:hidden mb-6">
         <h2 className="font-semibold mb-4 text-gray-700">
           Sensor Terbaru
+          {isUpdating && (
+            <span className="ml-2 text-xs text-green-500 font-normal animate-pulse">
+              Menunggu data baru...
+            </span>
+          )}
         </h2>
 
         {latestSensor ? (
           <div className="bg-white border rounded-2xl shadow-sm p-4 space-y-2 text-sm">
-
-            <p>
-              <b>pH:</b>{" "}
-              {Number(
-                latestSensor.ph
-              ).toFixed(2)}
-            </p>
-
-            <p>
-              <b>Suhu:</b>{" "}
-              {
-                latestSensor.suhu
-              }
-            </p>
-
-            <p>
-              <b>TDS:</b>{" "}
-              {
-                latestSensor.tds
-              }
-            </p>
-
-            <p>
-              <b>Kekeruhan:</b>{" "}
-              {
-                latestSensor.turbidity_status
-              }
-            </p>
-
+            <p><b>pH:</b> {Number(latestSensor.ph).toFixed(2)}</p>
+            <p><b>Suhu:</b> {latestSensor.suhu}</p>
+            <p><b>TDS:</b> {latestSensor.tds}</p>
+            <p><b>Kekeruhan:</b> {latestSensor.turbidity_status}</p>
             <p>
               <b>Waktu:</b>{" "}
-              {new Date(
-                latestSensor.created_at
-              ).toLocaleString(
-                "id-ID"
-              )}
+              {new Date(latestSensor.created_at).toLocaleString("id-ID")}
             </p>
-
           </div>
         ) : (
-          <div className="text-gray-500">
-            Tidak ada data
-          </div>
+          <div className="text-gray-500">Tidak ada data</div>
         )}
       </div>
 
       {/* CONTROL */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow border">
-        <h2 className="font-semibold mb-4 text-gray-700">
-          Kontrol Device
-        </h2>
+        <h2 className="font-semibold mb-4 text-gray-700">Kontrol Device</h2>
 
         <input
           type="number"
           min="1"
           value={duration / 60}
           disabled={isRunning}
-          onChange={(e) =>
-            setDuration(
-              Number(
-                e.target.value
-              ) * 60
-            )
-          }
+          onChange={(e) => setDuration(Number(e.target.value) * 60)}
           className="border p-3 rounded w-full mb-4"
           placeholder="Durasi menit"
         />
@@ -375,61 +406,46 @@ export default function DeviceDetail() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
           <button
-            onClick={
-              handleUpdateDevice
-            }
-            disabled={
-              cooldown > 0 ||
-              isOffline
-            }
+            onClick={handleUpdateDevice}
+            disabled={isUpdating || isOffline || isSending}
             className="w-full border border-green-500 text-green-500 py-2 rounded hover:bg-green-500 hover:text-white disabled:bg-gray-400 disabled:text-white"
           >
-            {cooldown > 0
-              ? `Tunggu ${cooldown}s`
-              : "Update"}
+            {isUpdating ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Updating...
+              </span>
+            ) : (
+              "Update"
+            )}
           </button>
 
           <button
-            onClick={
-              handleReplaceWater
-            }
-            disabled={
-              isRunning ||
-              isOffline
-            }
+            onClick={handleReplaceWater}
+            disabled={isRunning || isOffline || isSending}
             className="w-full border border-blue-500 text-blue-500 py-2 rounded hover:bg-blue-500 hover:text-white disabled:bg-gray-400 disabled:text-white"
           >
             Ganti Air
           </button>
 
           <button
-            onClick={
-              handlePumpOn
-            }
-            disabled={
-              isRunning ||
-              isOffline
-            }
+            onClick={handlePumpOn}
+            disabled={isRunning || isOffline || isSending}
             className="w-full border border-purple-500 text-purple-500 py-2 rounded hover:bg-purple-500 hover:text-white disabled:bg-gray-400 disabled:text-white"
           >
             Pompa ON
           </button>
 
           <button
-            onClick={
-              handlePumpOff
-            }
-            disabled={
-              pumpStatus ===
-                "off" ||
-              isOffline
-            }
+            onClick={handlePumpOff}
+            disabled={pumpStatus === "off" || isOffline || isSending}
             className="w-full border border-red-500 text-red-500 py-2 rounded hover:bg-red-500 hover:text-white disabled:bg-gray-400 disabled:text-white"
           >
             Stop Pompa
           </button>
 
         </div>
+              
       </div>
 
     </div>

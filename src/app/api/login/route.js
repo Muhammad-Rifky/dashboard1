@@ -1,6 +1,8 @@
 import db from "../../lib/db";
+import {verifyToken} from "../../lib/auth";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export async function POST(req) {
   const { email, password } = await req.json();
@@ -28,14 +30,12 @@ export async function POST(req) {
 
   let isMatch = false;
 
-  // jika password hash bcrypt
   if (user.password.startsWith("$2")) {
     isMatch = await bcrypt.compare(
       password,
       user.password
     );
   } else {
-    // password lama plaintext
     isMatch = password === user.password;
   }
 
@@ -46,13 +46,30 @@ export async function POST(req) {
     );
   }
 
+  // Generate JWT
+  const token = jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role, // jika ada kolom role
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
+
   const res = NextResponse.json({
     message: "Login berhasil",
+    token, // opsional jika frontend juga membutuhkan token
   });
 
-  res.cookies.set("session", user.id, {
+  res.cookies.set("token", token, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
     path: "/",
+    maxAge: 60 * 60 * 24 * 7, // 7 hari
   });
 
   return res;

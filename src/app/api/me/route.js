@@ -1,41 +1,47 @@
 import db from "../../lib/db";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
 
 export async function GET() {
-
   try {
-    // 🔹 cookies() itu async, harus await
-    const cookieStore = await cookies(); 
-    const session = cookieStore.get("session"); // sekarang sudah bisa get
+    const cookieStore = await cookies();
 
-    if(!session || !session.value){
+    const token =
+      cookieStore.get("token")?.value;
+
+    if (!token) {
       return NextResponse.json(
-        { error:"Unauthorized" },
-        { status:401 }
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
-    // Query user berdasarkan session
-    const [rows] = await db.execute(
-      "SELECT id, name, role FROM users WHERE id=?",
-      [session.value]
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET
     );
 
-    if(rows.length === 0){
+    const [rows] = await db.execute(
+      "SELECT id, name, email, role FROM users WHERE id=?",
+      [payload.id]
+    );
+
+    if (rows.length === 0) {
       return NextResponse.json(
-        { error:"User tidak ditemukan" },
-        { status:404 }
+        { error: "User tidak ditemukan" },
+        { status: 404 }
       );
     }
 
     return NextResponse.json(rows[0]);
 
   } catch (err) {
-    console.error("API /me error:", err);
+    console.error(err);
+
     return NextResponse.json(
-      { error:"Server error" },
-      { status:500 }
+      { error: "Unauthorized" },
+      { status: 401 }
     );
   }
 }

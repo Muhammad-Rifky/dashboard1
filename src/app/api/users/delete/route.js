@@ -21,8 +21,8 @@ export async function POST(req){
             );
         }
 
-        // 🔥 SUPERADMIN bisa hapus pengguna
-        if(user.role === "superadmin"){
+        // 🔥 admin bisa hapus pengguna
+        if(user.role === "admin"){
             await db.execute(
                 "DELETE FROM users WHERE id=?",
                 [id]
