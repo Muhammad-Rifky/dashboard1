@@ -41,8 +41,8 @@ export async function POST(req){
     // 🔥 LOGIC ROLE
     let owner_id;
 
-    if(user.role === "superadmin"){
-      // superadmin bisa assign user
+    if(user.role === "admin"){
+      // admin bisa assign user
       owner_id = user_id || user.id;
     } else {
       // petani hanya bisa punya sendiri

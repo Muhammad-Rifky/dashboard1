@@ -7,7 +7,8 @@ import {
   Cpu,
   History,
   Users,
-  ChevronDown
+  ChevronDown,
+  Brain
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -17,6 +18,7 @@ export default function DashboardLayout({ children }) {
   const [user,setUser] = useState(null);
 
   const [openDashboard,setOpenDashboard] = useState(true);
+  const [openHistory,setOpenHistory] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -102,6 +104,18 @@ export default function DashboardLayout({ children }) {
                     Analysis
                   </button>
 
+                  <button
+                    onClick={()=>router.push("/dashboard/fuzzy")}
+                    className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer ${
+                      pathname.startsWith("/dashboard/fuzzy")
+                        ? "bg-gray-700"
+                        : "hover:bg-gray-800"
+                    }`}
+                  >
+                    Fuzzy
+                  </button>
+
+
                 </div>
               )}
             </div>
@@ -120,20 +134,51 @@ export default function DashboardLayout({ children }) {
             </button>
 
             {/* HISTORY */}
-            <button
-              onClick={()=>router.push("/history")}
-              className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer ${
-                pathname.startsWith("/history")
-                  ? "bg-gray-700"
-                  : "hover:bg-gray-800"
-              }`}
-            >
-              <History size={18}/>
-              History
-            </button>
+            <div>
+              <button
+                onClick={()=>setOpenHistory(!openHistory)}
+                className="flex items-center justify-between w-full px-3 py-2 rounded hover:bg-gray-800 cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <History size={18}/>
+                  History
+                </div>
+                <ChevronDown
+                  size={16}
+                  className={`transition ${openHistory ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {openHistory && (
+                <div className="ml-6 mt-1 flex flex-col gap-1">
+
+                  <button
+                    onClick={()=>router.push("/history/data")}
+                    className={`text-left px-3 py-2 rounded cursor-pointer ${
+                      pathname === "/history/data"
+                        ? "bg-gray-700"
+                        : "hover:bg-gray-800"
+                    }`}
+                  >
+                    Data History
+                  </button>
+
+                  <button
+                    onClick={()=>router.push("/history/control")}
+                    className={`text-left px-3 py-2 rounded cursor-pointer ${
+                      pathname === "/history/control"
+                        ? "bg-gray-700"
+                        : "hover:bg-gray-800"
+                    }`}
+                  >
+                    Control History
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* USERS */}
-            {user.role === "superadmin" && (
+            {user.role === "admin" && (
               <button
                 onClick={()=>router.push("/user")}
                 className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer ${
@@ -146,7 +191,6 @@ export default function DashboardLayout({ children }) {
                 Users
               </button>
             )}
-
           </nav>
 
           {/* USER INFO */}

@@ -1,95 +1,310 @@
+// =====================================================
+// MEMBERSHIP FUNCTION
+// =====================================================
+
 function triangle(x, a, b, c) {
   if (x <= a || x >= c) return 0;
+
   if (x === b) return 1;
-  if (x < b) return (x - a) / (b - a);
+
+  if (x < b) {
+    return (x - a) / (b - a);
+  }
+
   return (c - x) / (c - b);
 }
 
-// Fuzzifikasi pH
+function trapezoid(x, a, b, c, d) {
+  if (x <= a || x >= d) return 0;
+
+  if (x >= b && x <= c) return 1;
+
+  if (x > a && x < b) {
+    return (x - a) / (b - a);
+  }
+
+  return (d - x) / (d - c);
+}
+
+//
+// Helper untuk membatasi clipping Mamdani
+//
+function clip(value, alpha) {
+  return Math.min(value, alpha);
+}
+
+//
+// Helper agregasi Mamdani
+//
+function max(...values) {
+  return Math.max(...values);
+}
+
+//
+// =====================================================
+// FUZZIFIKASI INPUT
+// =====================================================
+//
+
+// pH ideal ikan air tawar = 6.5 - 8
 function fuzzifyPH(ph) {
   return {
-    asam: triangle(ph, 0, 3, 6),
-    netral: triangle(ph, 6, 7, 8),
-    basa: triangle(ph, 8, 11, 14),
+    asam: trapezoid(ph, 0, 0, 5.5, 6.8),
+
+    netral: triangle(ph, 6.5, 7.2, 8),
+
+    basa: trapezoid(ph, 7.8, 8.5, 14, 14),
   };
 }
 
-// Fuzzifikasi Suhu
+// suhu ideal = 24 - 30
 function fuzzifySuhu(suhu) {
   return {
-    dingin: triangle(suhu, 0, 15, 24),
+    dingin: trapezoid(suhu, 0, 0, 18, 24),
+
     normal: triangle(suhu, 24, 27, 30),
-    panas: triangle(suhu, 30, 33, 40),
+
+    panas: trapezoid(suhu, 29, 32, 40, 40),
   };
 }
 
-// Fuzzifikasi TDS
+// ppm
 function fuzzifyTDS(tds) {
   return {
-    rendah: triangle(tds, 0, 150, 300),
-    sedang: triangle(tds, 300, 550, 800),
-    tinggi: triangle(tds, 800, 1200, 2000),
+    rendah: trapezoid(tds, 0, 0, 150, 300),
+
+    sedang: triangle(tds, 250, 500, 750),
+
+    tinggi: trapezoid(tds, 700, 900, 2000, 2000),
   };
 }
 
-// Fuzzifikasi Turbidity
-function fuzzifyTurbidity(turb) {
+// NTU
+function fuzzifyTurbidityADC(adc) {
+
   return {
-    jernih: triangle(turb, 0, 2.5, 5),
-    sedang: triangle(turb, 5, 15, 25),
-    keruh: triangle(turb, 25, 50, 100),
+
+    keruh: trapezoid(adc, 0, 0, 2200, 2380),
+
+    sedang: triangle(adc, 2380, 2590, 2800),
+
+    jernih: trapezoid(adc, 2800, 3200, 3814, 3814)
+
   };
 }
 
-export function fuzzyLogic({ ph, suhu, tds, turbidity }) {
-  const phSet = fuzzifyPH(ph);
-  const suhuSet = fuzzifySuhu(suhu);
-  const tdsSet = fuzzifyTDS(tds);
-  const turbSet = fuzzifyTurbidity(turbidity);
+//
+// =====================================================
+// FUZZY OUTPUT
+// Kualitas Air (0 - 100)
+// =====================================================
+//
 
-  // Kumpulan rule
-  const rules = [];
+function outputBuruk(x) {
+  return trapezoid(x, 0, 0, 20, 40);
+}
 
-  // Rule 1: semua normal → tutup (0)
-  rules.push({
-    degree: Math.min(phSet.netral, suhuSet.normal, tdsSet.sedang, turbSet.sedang),
-    output: 0
-  });
+function outputSedang(x) {
+  return triangle(x, 30, 50, 70);
+}
 
-  // Rule 2: Turbidity keruh → buka penuh (100)
-  rules.push({
-    degree: turbSet.keruh,
-    output: 100
-  });
+function outputBaik(x) {
+  return trapezoid(x, 60, 80, 100, 100);
+}
 
-  // Rule 3: TDS tinggi → buka lebar (80)
-  rules.push({
-    degree: tdsSet.tinggi,
-    output: 80
-  });
+//
+// =====================================================
+// MAMDANI ENGINE
+// =====================================================
+//
 
-  // Rule 4: pH asam atau basa → buka (70)
-  rules.push({
-    degree: Math.max(phSet.asam, phSet.basa),
-    output: 70
-  });
+export function fuzzyMamdani(input) {
 
-  // Rule 5: suhu panas → buka (60)
-  rules.push({
-    degree: suhuSet.panas,
-    output: 60
-  });
+  const {
+    ph,
+    suhu,
+    tds,
+    turbidity_adc
+  } = input;
 
-  // Centroid defuzzifikasi
+  //
+  // FUZZIFIKASI
+  //
+  const PH = fuzzifyPH(ph);
+  const SUHU = fuzzifySuhu(suhu);
+  const TDS = fuzzifyTDS(tds);
+  const TURB = fuzzifyTurbidityADC(turbidity_adc);
+
+  //
+  // =====================================================
+  // RULE BASE
+  // =====================================================
+  //
+
+  // R1
+  // Semua ideal
+  const r1 = {
+    name: "Air Baik",
+    alpha: Math.min(
+      PH.netral,
+      SUHU.normal,
+      TDS.sedang,
+      TURB.jernih
+    ),
+    output: "baik"
+  };
+
+  // R2
+  const r2 = {
+    name: "Air Keruh",
+    alpha: TURB.keruh,
+    output: "buruk"
+  };
+
+  // R3
+  const r3 = {
+    name: "TDS Tinggi",
+    alpha: TDS.tinggi,
+    output: "buruk"
+  };
+
+  // R4
+  const r4 = {
+    name: "pH Tidak Ideal",
+    alpha: Math.max(
+      PH.asam,
+      PH.basa
+    ),
+    output: "sedang"
+  };
+
+  // R5
+  const r5 = {
+    name: "Suhu Panas",
+    alpha: SUHU.panas,
+    output: "sedang"
+  };
+
+  // R6
+  const r6 = {
+    name: "Suhu Dingin",
+    alpha: SUHU.dingin,
+    output: "sedang"
+  };
+
+  //
+  // =====================================================
+  // AGREGASI MAMDANI
+  // =====================================================
+  //
+  // Domain output = 0..100
+  //
+
+  const aggregated = [];
+
+  for (let z = 0; z <= 100; z++) {
+
+    //
+    // BURUK
+    //
+    const buruk = max(
+      clip(outputBuruk(z), r2.alpha),
+      clip(outputBuruk(z), r3.alpha)
+    );
+
+    //
+    // SEDANG
+    //
+    const sedang = max(
+      clip(outputSedang(z), r4.alpha),
+      clip(outputSedang(z), r5.alpha),
+      clip(outputSedang(z), r6.alpha)
+    );
+
+    //
+    // BAIK
+    //
+    const baik = clip(
+      outputBaik(z),
+      r1.alpha
+    );
+
+    //
+    // MAX AGGREGATION
+    //
+    aggregated[z] = max(
+      buruk,
+      sedang,
+      baik
+    );
+  }
+
+  //
+  // =====================================================
+  // DEFUZZIFIKASI CENTROID
+  // =====================================================
+  //
+
   let numerator = 0;
   let denominator = 0;
 
-  rules.forEach(r => {
-    numerator += r.degree * r.output;
-    denominator += r.degree;
-  });
+  for (let z = 0; z <= 100; z++) {
 
-  const result = denominator ? numerator / denominator : 0;
+    numerator += z * aggregated[z];
 
-  return result; // 0 - 100
+    denominator += aggregated[z];
+  }
+
+  const score =
+    denominator === 0
+      ? 0
+      : numerator / denominator;
+
+  //
+  // STATUS
+  //
+
+  let status = "";
+
+  if (score < 40) {
+    status = "Buruk";
+  }
+  else if (score < 70) {
+    status = "Sedang";
+  }
+  else {
+    status = "Baik";
+  }
+
+  //
+  // AKSI AKTUATOR
+  //
+
+  let action = "OFF";
+
+  if (score < 40) {
+    action = "DRAIN_AND_REFILL";
+  }
+
+  return {
+    score: Number(score.toFixed(2)),
+    status,
+    action,
+
+    rules: [
+      r1,
+      r2,
+      r3,
+      r4,
+      r5,
+      r6
+    ],
+
+    fuzzySet: {
+      PH,
+      SUHU,
+      TDS,
+      TURB
+    }
+  };
 }

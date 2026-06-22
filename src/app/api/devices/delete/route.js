@@ -23,8 +23,8 @@ export async function POST(req){
       );
     }
 
-    // 🔥 SUPERADMIN bisa hapus semua
-    if(user.role === "superadmin"){
+    // ADMIN bisa hapus semua
+    if(user.role === "admin"){
       await db.execute(
         "DELETE FROM devices WHERE id=?",
         [id]

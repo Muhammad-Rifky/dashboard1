@@ -1,25 +1,40 @@
+import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import db from "./db";
 
-export async function getUser(){
+export function generateToken(user) {
+  return jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
+}
 
-  // 🔥 WAJIB pakai await
+export function verifyToken(token) {
+  try {
+    return jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+  } catch {
+    return null;
+  }
+}
+
+export async function getUser() {
   const cookieStore = await cookies();
 
-  const session = cookieStore.get("session");
+  const token =
+    cookieStore.get("token")?.value;
 
-  if(!session){
+  if (!token) {
     return null;
   }
 
-  const [rows] = await db.execute(
-    "SELECT id, name, role FROM users WHERE id=?",
-    [session.value]
-  );
-
-  if(rows.length === 0){
-    return null;
-  }
-
-  return rows[0];
+  return verifyToken(token);
 }

@@ -1,23 +1,40 @@
+import mysql from "mysql2/promise";
 import { fuzzyLogic } from "../../../lib/fuzzy";
 
-export async function POST(req) {
-  try {
-    const { temperature, humidity } = await req.json();
+export async function GET() {
+  const db = await mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "",
+    database: "iot_system",
+  });
 
-    if (temperature == null || humidity == null) {
-      return Response.json(
-        { error: "Input tidak lengkap" },
-        { status: 400 }
-      );
-    }
+  const [rows] = await db.execute(`
+    SELECT *
+    FROM sensor_data
+    ORDER BY created_at DESC
+    LIMIT 1
+  `);
 
-    const result = fuzzyLogic(temperature, humidity);
-
-    return Response.json(result);
-  } catch (err) {
-    return Response.json(
-      { error: "Server error", detail: err.message },
-      { status: 500 }
-    );
+  if (rows.length === 0) {
+    return Response.json({
+      success: false,
+      message: "No data"
+    });
   }
+
+  const data = rows[0];
+
+  const fuzzy = fuzzyLogic({
+    ph: Number(data.ph),
+    suhu: Number(data.suhu),
+    tds: Number(data.tds),
+    turbidity: Number(data.turbidity),
+  });
+
+  return Response.json({
+    success: true,
+    sensor: data,
+    fuzzy
+  });
 }

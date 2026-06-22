@@ -5,7 +5,7 @@ import { getUser } from "../../../lib/auth";
 export async function PUT(req) {
   const user = await getUser();
 
-  if (!user || user.role !== "superadmin") {
+  if (!user || user.role !== "admin") {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

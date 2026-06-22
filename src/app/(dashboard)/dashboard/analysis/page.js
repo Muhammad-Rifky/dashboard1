@@ -31,13 +31,13 @@ export default function AnalysisPage(){
   useEffect(()=>{
 
     if(deviceA){
-      fetch(`/api/sensor/history?device_id=${deviceA}`)
+      fetch(`/api/sensor/history?kode_perangkat=${deviceA}`)
         .then(res=>res.json())
         .then(setDataA);
     } else setDataA([]);
 
     if(deviceB){
-      fetch(`/api/sensor/history?device_id=${deviceB}`)
+      fetch(`/api/sensor/history?kode_perangkat=${deviceB}`)
         .then(res=>res.json())
         .then(setDataB);
     } else setDataB([]);
@@ -60,8 +60,8 @@ export default function AnalysisPage(){
     turbB: dataB[i]?.turbidity || null
   }));
 
-  const nameA = devices.find(d=>d.device_id===deviceA)?.name || "Device A";
-  const nameB = devices.find(d=>d.device_id===deviceB)?.name || "Device B";
+  const nameA = devices.find(d=>d.kode_perangkat===deviceA)?.name || "Device A";
+  const nameB = devices.find(d=>d.kode_perangkat===deviceB)?.name || "Device B";
 
   return(
     <div>
@@ -85,7 +85,7 @@ export default function AnalysisPage(){
                 >
                 <option value="">Device A</option>
                 {devices.map(d=>(
-                    <option key={d.device_id} value={d.device_id}>
+                    <option key={d.kode_perangkat} value={d.kode_perangkat}>
                     {d.name}
                     </option>
                 ))}
@@ -98,7 +98,7 @@ export default function AnalysisPage(){
                 >
                 <option value="">Device B</option>
                 {devices.map(d=>(
-                    <option key={d.device_id} value={d.device_id}>
+                    <option key={d.kode_perangkat} value={d.kode_perangkat}>
                     {d.name}
                     </option>
                 ))}
