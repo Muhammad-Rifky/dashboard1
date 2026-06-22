@@ -1,12 +1,12 @@
 import mysql from "mysql2/promise";
 
 const config = {
-  host: "localhost",
-  user: "iotuser",
-  password: "123456",
-  database: "iot_system",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   timezone: "+07:00",
-  dateStrings: "true",
+  dateStrings: true,
 };
 
 const db = mysql.createPool(config);
