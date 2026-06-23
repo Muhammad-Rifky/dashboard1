@@ -70,25 +70,6 @@ export default function DeviceDetail() {
     });
   };
 
-  const res = await fetch("/api/devices/update", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      kode_perangkat: device.kode_perangkat,
-      command,
-      ...extra,
-    }),
-    });
-
-    const data = await res.json();
-
-    console.log("RESPONSE", data);
-
-    return data;
-  };
-
   const handleUpdateDevice =
     async () => {
       await sendCommand("update");
