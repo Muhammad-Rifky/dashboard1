@@ -51,24 +51,29 @@ export default function DeviceDetail() {
       : latest;
   }, null);
 
-  const sendCommand = async (
+  const sendCommand = async (command, extra = {}) => {
+  console.log("SEND COMMAND", {
+    device_id: device?.id,
     command,
-    extra = {}
-  ) => {
-    if (!device?.device_id) return;
+  });
 
-    await fetch("/api/devices/update", {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify({
-        device_id: device.id,
-        command,
-        ...extra,
-      }),
+  const res = await fetch("/api/devices/update", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      device_id: device.id,
+      command,
+      ...extra,
+    }),
     });
+
+    const data = await res.json();
+
+    console.log("RESPONSE", data);
+
+    return data;
   };
 
   const handleUpdateDevice =
