@@ -15,6 +15,7 @@ export default function DeviceDetail() {
   const [pumpStatus, setPumpStatus] = useState("off");
   const [duration, setDuration] = useState(600);
   const latestAction = device?.actions?.[0];
+  const [cooldown, setCooldown] = useState(0);
   const fetchData = async () => {
     try {
       const res = await fetch(`/api/devices/${params.id}`, {
