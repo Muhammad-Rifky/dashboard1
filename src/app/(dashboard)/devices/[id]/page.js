@@ -14,7 +14,7 @@ export default function DeviceDetail() {
   const [loading, setLoading] = useState(true);
   const [pumpStatus, setPumpStatus] = useState("off");
   const [duration, setDuration] = useState(600);
-  const latestAction = device?.actions?.[0];
+  const latestAction = device?.latestAction; //ambil dari
   const [cooldown, setCooldown] = useState(0);
   const fetchData = async () => {
     try {
@@ -88,6 +88,35 @@ export default function DeviceDetail() {
 
       setTimeout(fetchData, 2000);
     };
+  
+  const handleConfirmWaterChange = async () => {
+    try {
+      setIsSending(true);
+
+      const res = await fetch("/api/devices/control", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fuzzy_result_id: latestAction?.id, // 🔥 INI YANG KURANG
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) throw new Error(result.error || "Gagal");
+
+      toast.success("Air berhasil dikonfirmasi");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
+  
 
   const handleReplaceWater =
     async () => {
@@ -235,14 +264,14 @@ export default function DeviceDetail() {
               Sistem mendeteksi kualitas air buruk.
               Segera lakukan penggantian air kolam.
             </p>
-
             <button
               onClick={handleConfirmWaterChange}
-              className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              disabled={isSending}
+              className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
             >
-              ✓ Air Sudah Diganti
+              {isSending ? "Mengirim..." : "✓ Air Sudah Diganti"}
             </button>
-          </div>
+            </div>
         ) : (
           <div className="text-gray-500">
             Tidak ada action yang harus dilakukan.
