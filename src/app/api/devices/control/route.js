@@ -4,146 +4,93 @@ import { cookies } from "next/headers";
 
 export async function POST(request) {
   try {
-
-    // ======================
-    // Ambil token dari cookie
-    // ======================
     const token = (await cookies()).get("token")?.value;
+    if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (!token) {
-      return Response.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // ======================
-    // Decode JWT
-    // ======================
     let decoded;
     try {
-      decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET
-      );
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
-      return Response.json(
-        { error: "Token tidak valid atau expired" },
-        { status: 401 }
-      );
+      return Response.json({ error: "Token tidak valid" }, { status: 401 });
     }
 
     const userId = decoded.id;
-    const userRole = decoded.role; // ✅ FIX: ambil dari JWT
+    const userRole = decoded.role;
 
-    // ======================
-    // Body Request
-    // ======================
     const body = await request.json();
+    const { command, kode_perangkat, duration } = body;
 
-    const { fuzzy_result_id } = body;
-
-    if (!fuzzy_result_id) {
-      return Response.json(
-        { error: "fuzzy_result_id wajib diisi" },
-        { status: 400 }
-      );
+    if (!kode_perangkat || !command) {
+      return Response.json({ error: "kode_perangkat dan command wajib diisi" }, { status: 400 });
     }
 
-    // ======================
-    // Ambil data fuzzy_result
-    // ======================
-    const [rows] = await db.execute(
-      `
-      SELECT
-        id,
-        kode_perangkat,
-        status
-      FROM fuzzy_result
-      WHERE id = ?
-      `,
-      [fuzzy_result_id]
-    );
-
-    if (!rows.length) {
-      return Response.json(
-        { error: "Data fuzzy tidak ditemukan" },
-        { status: 404 }
-      );
-    }
-
-    const fuzzy = rows[0];
-
-    if (fuzzy.status === "completed") {
-      return Response.json(
-        { error: "Rekomendasi ini sudah dikonfirmasi sebelumnya" },
-        { status: 409 }
-      );
-    }
-
-    // ======================
-    // Update status
-    // ======================
-    await db.execute(
-      `
-      UPDATE fuzzy_result
-      SET status = 'completed'
-      WHERE id = ?
-      `,
-      [fuzzy_result_id]
-    );
-
-    // ======================
-    // Simpan histori (FIX DI SINI)
-    // ======================
-    try {
-      const [result] = await db.execute(
-        `
-        INSERT INTO action_logs (
-          fuzzy_result_id,
-          kode_perangkat,
-          user_id,
-          role,
-          action
-        )
-        VALUES (?, ?, ?, ?, ?)
-        `,
-        [
-          fuzzy_result_id,
-          fuzzy.kode_perangkat,
-          userId,
-          userRole, // ✅ FIX: bukan user.role
-          "water_changed"
-        ]
+    // ====================================================
+    // SKENARIO 1: GANTI AIR (MANUAL DENGAN DURASI)
+    // ====================================================
+    if (command === "ganti_air") {
+      await db.execute(
+        `UPDATE devices SET pump_status = 'manual' WHERE kode_perangkat = ?`,
+        [kode_perangkat]
       );
 
-      console.log("LOG INSERT SUCCESS:", result);
+      // Catat log ganti air berdurasi
+      try {
+        await db.execute(
+          `INSERT INTO action_logs (fuzzy_result_id, kode_perangkat, user_id, role, action) 
+           VALUES (NULL, ?, ?, ?, ?)`,
+          [kode_perangkat, userId, userRole, `manual_water_change_${duration || 0}_sec`]
+        );
+      } catch (e) {}
 
-    } catch (err) {
-      console.error("INSERT ACTION LOG ERROR:", err);
+      return Response.json({ success: true, message: "Proses ganti air berdurasi dimulai." });
     }
 
-    return Response.json({
-      success: true,
-      message: "Penggantian air berhasil dikonfirmasi"
-    });
+    // ====================================================
+    // SKENARIO 2: POMPA ON (MANUAL TANPA DURASI / SAKELAR MURNI)
+    // ====================================================
+    if (command === "pompa_on") {
+      await db.execute(
+        `UPDATE devices SET pump_status = 'manual' WHERE kode_perangkat = ?`,
+        [kode_perangkat]
+      );
+
+      // Catat log sakelar manual ON
+      try {
+        await db.execute(
+          `INSERT INTO action_logs (fuzzy_result_id, kode_perangkat, user_id, role, action) 
+           VALUES (NULL, ?, ?, ?, 'pump_forced_on')`,
+          [kode_perangkat, userId, userRole]
+        );
+      } catch (e) {}
+
+      return Response.json({ success: true, message: "Pompa berhasil dinyalakan manual." });
+    }
+
+    // ====================================================
+    // SKENARIO 3: POMPA OFF (MEMATIKAN SEMUA JENIS POMPA)
+    // ====================================================
+    if (command === "pompa_off") {
+      await db.execute(
+        `UPDATE devices SET pump_status = 'off' WHERE kode_perangkat = ?`,
+        [kode_perangkat]
+      );
+
+      // Catat log sakelar manual OFF
+      try {
+        await db.execute(
+          `INSERT INTO action_logs (fuzzy_result_id, kode_perangkat, user_id, role, action) 
+           VALUES (NULL, ?, ?, ?, 'pump_forced_off')`,
+          [kode_perangkat, userId, userRole]
+        );
+      } catch (e) {}
+
+      return Response.json({ success: true, message: "Pompa berhasil dimatikan." });
+    }
+
+    return Response.json({ error: "Command tidak dikenal" }, { status: 400 });
 
   } catch (err) {
     console.error(err);
-
-    if (
-      err.name === "JsonWebTokenError" ||
-      err.name === "TokenExpiredError"
-    ) {
-      return Response.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    return Response.json(
-      { error: err.message },
-      { status: 500 }
-    );
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }

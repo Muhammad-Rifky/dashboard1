@@ -1,7 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
+import { useFilter } from "../../../../hook/useFilter";
+import SearchBar from "../../../../components/SearchBar";
+import Pagination from "../../../../components/Pagination";
+import { usePagination } from "../../../../hook/usePagination";
+import Table from "../../../../components/Table";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +35,7 @@ export default function DevicesPage(){
 
   const [showConfirm,setShowConfirm] = useState(false);
   const [selectedId,setSelectedId] = useState(null);
+  const [search,setSearch] = useState("");
 
   function loadDevices(){
     fetch("/api/devices", { cache: "no-store" }) // anti cache
@@ -101,35 +107,31 @@ export default function DevicesPage(){
 
     loadDevices();
   }
-
-  async function handleDelete(){
-
-    const res = await fetch("/api/devices/delete",{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ id:selectedId })
+  const filteredDevices = useFilter({
+      data: devices,
+      search,
+      fields: ["kode_perangkat","name","location"]
+    });
+    const { paginatedData, totalPages, indexOfFirst } = usePagination({
+      data: filteredDevices,
+      currentPage,
+      rowsPerPage
     });
 
-    const data = await res.json();
-
-    if(!res.ok){
-      alert(data.error || "Gagal hapus device");
-      return;
-    }
-
-    setShowConfirm(false);
-    setSelectedId(null);
-
-    loadDevices();
-  }
-
-
+  const currentDevice = paginatedData;
+  const headers = [
+      { label: "No" },
+      { label: "Kode Perangkat" },
+      { label: "Nama Perangkat" },
+      { label: "Lokasi" },
+      { label: "Status", align: "center" },
+      { label: "Last Update", align: "center" },
+      { label: "Aksi", align: "center" },
+    ];
+  
   if(!user) return <div className="p-6">Loading...</div>;
 
-  const indexOfLast = currentPage * rowsPerPage;
-  const indexOfFirst = indexOfLast - rowsPerPage;
-  const currentDevices = devices.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(devices.length / rowsPerPage);
+  
   
   return(
 
@@ -194,62 +196,68 @@ export default function DevicesPage(){
 
         {error && <p className="text-red-500 mt-2">{error}</p>}
       </div>
-        {/* DESKTOP TABLE */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3 text-left">No</th>
-              <th className="p-3 text-left">Kode Perangkat</th>
-              <th className="p-3 text-left">Name</th>
-              <th className="p-3 text-left">Location</th>
-              <th className="p-3 text-center">Status</th>
-              <th className="p-3 text-left">Last Update</th>
-              <th className="p-3 text-center">Aksi</th>
-            </tr>
-          </thead>
+      {/* SEARCH BAR */}
+      <SearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Cari device..."
+      />
+      {/* DESKTOP TABLE */}
+      <Table headers={headers}>
+        {currentDevice.map((d, i) => (
+          <tr key={d.id} className="border-t hover:bg-gray-50">
+            <td className="p-3">
+              {indexOfFirst + i + 1}
+            </td>
 
-          <tbody>
-            {currentDevices.map((d,i)=>(
-              <tr key={d.id} className="border-b hover:bg-gray-50">
-                <td className="p-3">{indexOfFirst + i + 1}</td>
-                <td className="p-3">{d.kode_perangkat}</td>
-                <td className="p-3">{d.name}</td>
-                <td className="p-3">{d.location}</td>
-                <td className="p-3 text-center">
-                  <span
-                    className={
-                      d?.status === "online"
-                        ? "text-green-500 font-semibold"
-                        : "text-red-500 font-semibold"
-                    }
-                  >
-                    {d?.status || "offline"}
-                  </span>
-                </td>
-                <td className="p-3">
-                  {d.last_seen
-                    ? new Date(d.last_seen).toLocaleString("id-ID")
-                    : "-"}
-                </td>
-                <td className="p-3 text-center space-y-2">
+            <td className="p-3">
+              {d.kode_perangkat}
+            </td>
 
-                  <button
-                    onClick={() => router.push(`/devices/${d.id}`)}
-                    className="w-full bg-white text-blue-500 hover:bg-blue-500 px-4 py-2 shadow rounded hover:text-white cursor-pointer border border-blue-500"
-                  >
-                    Detail
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            <td className="p-3">
+              {d.name}
+            </td>
+
+            <td className="p-3">
+              {d.location}
+            </td>
+
+            <td className="p-3 text-center">
+              {d.status === "online" ? (
+                <span className="text-green-600 font-semibold">
+                  Online
+                </span>
+              ) : (
+                <span className="text-red-500 font-semibold">
+                  Offline
+                </span>
+              )}
+            </td>
+            <td className="p-3 text-center">
+              {d.last_seen
+                ? new Date(d.last_seen).toLocaleString("id-ID")
+                : "-"}
+            </td>
+
+            <td className="p-3">
+              <div className="flex justify-center gap-2">
+
+                <button
+                  onClick={() => router.push(`/devices/${d.id}`)}
+                  className="px-3 py-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-500 hover:text-white"
+                >
+                  Detail
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        ))}
+      </Table>
       
       {/* MOBILE VIEW */}
       <div className="md:hidden space-y-4">
-        {currentDevices.map((d, i) => (
+        {currentDevice.map((d, i) => (
           <div
             key={d.id}
             className="bg-white border rounded-2xl shadow-sm p-4"
@@ -322,79 +330,11 @@ export default function DevicesPage(){
       </div>
 
       {/* PAGINATION */}
-      <div className="flex justify-center items-center gap-2 mt-6 flex-wrap">
-
-        <button
-          onClick={()=>setCurrentPage(prev=>Math.max(prev-1,1))}
-          disabled={currentPage === 1}
-          className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-100"
-        >
-          Prev
-        </button>
-
-        {[...Array(totalPages)].map((_,i)=>(
-          <button
-            key={i}
-            onClick={()=>setCurrentPage(i+1)}
-            className={`px-3 py-1 rounded ${
-              currentPage === i+1
-                ? "bg-gray-900 text-white"
-                : "border hover:bg-gray-100"
-            }`}
-          >
-            {i+1}
-          </button>
-        ))}
-
-        <button
-          onClick={()=>setCurrentPage(prev=>Math.min(prev+1,totalPages))}
-          disabled={currentPage === totalPages || totalPages === 0}
-          className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-100"
-        >
-          Next
-        </button>
-
-      </div>
-
-      {/* MODAL */}
-      {showConfirm && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-9999"
-          onClick={()=>setShowConfirm(false)}
-        >
-          <div
-            className="bg-white p-6 rounded-xl shadow w-[90%] max-w-sm text-center"
-            onClick={(e)=>e.stopPropagation()}
-          >
-            <h2 className="text-lg font-bold mb-4">
-              Hapus Device
-            </h2>
-
-            <p className="mb-6">
-              Yakin hapus <b>{selectedName}</b>?
-            </p>
-
-            <div className="flex justify-center gap-3">
-
-              <button
-                onClick={()=>setShowConfirm(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded cursor-pointer hover:bg-gray-500"
-              >
-                Batal
-              </button>
-
-              <button
-                onClick={handleDelete}
-                className="bg-red-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-red-600"
-              >
-                Hapus
-              </button>
-
-            </div>
-
-          </div>
-        </div>
-      )}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
     </div>
   );

@@ -15,10 +15,10 @@ export async function POST(req){
       );
     }
 
-    const { device_id, name, location, user_id } = await req.json();
+    const { kode_perangkat, name, location, user_id } = await req.json();
 
     // 🔥 VALIDASI
-    if(!device_id || !name || !location){
+    if(!kode_perangkat || !name || !location){
       return Response.json(
         { error:"Semua field wajib diisi" },
         { status:400 }
@@ -27,8 +27,8 @@ export async function POST(req){
 
     // 🔥 CEK DUPLIKAT
     const [existing] = await db.execute(
-      "SELECT * FROM devices WHERE device_id=?",
-      [device_id]
+      "SELECT * FROM devices WHERE kode_perangkat=?",
+      [kode_perangkat]
     );
 
     if(existing.length > 0){
@@ -51,9 +51,9 @@ export async function POST(req){
 
     // 🔥 INSERT
     await db.execute(
-      `INSERT INTO devices (device_id, name, location, user_id, status)
+      `INSERT INTO devices (kode_perangkat, name, location, user_id, status)
        VALUES (?, ?, ?, ?, 'offline')`,
-      [device_id, name, location, owner_id]
+      [kode_perangkat, name, location, owner_id]
     );
 
     return Response.json({ message:"Device berhasil ditambahkan" });

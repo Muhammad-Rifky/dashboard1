@@ -5,7 +5,7 @@ export async function GET(req, { params }) {
 
   const [rows] = await db.query(`
     SELECT * FROM sensor_data
-    WHERE device_id = ?
+    WHERE kode_perangkat = ?
     ORDER BY created_at ASC
   `, [id]);
 

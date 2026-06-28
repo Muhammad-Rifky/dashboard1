@@ -9,11 +9,11 @@ export async function PUT(req) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { device_id, user_id } = await req.json();
+  const { kode_perangkat, user_id } = await req.json();
 
   await db.execute(
-    `UPDATE devices SET user_id=? WHERE device_id=?`,
-    [user_id, device_id]
+    `UPDATE devices SET user_id=? WHERE kode_perangkat=?`,
+    [user_id, kode_perangkat]
   );
 
   return Response.json({ message: "Device berhasil diassign ulang" });

@@ -19,6 +19,8 @@ export async function GET() {
       al.id,
       al.kode_perangkat,
       al.action,
+      al.role,
+      fr.status AS status,
       al.created_at,
       u.name AS user_name
     FROM action_logs al
@@ -26,7 +28,15 @@ export async function GET() {
       ON al.user_id = u.id
     JOIN devices d
       ON al.kode_perangkat = d.kode_perangkat
-    WHERE 1=1
+    LEFT JOIN fuzzy_result fr
+      ON fr.id = (
+        SELECT id
+        FROM fuzzy_result
+        WHERE kode_perangkat = al.kode_perangkat
+        ORDER BY created_at DESC
+        LIMIT 1
+      )
+      WHERE 1=1
     `;
 
     const params = [];

@@ -103,19 +103,6 @@ export default function DashboardLayout({ children }) {
                   >
                     Analysis
                   </button>
-
-                  <button
-                    onClick={()=>router.push("/dashboard/fuzzy")}
-                    className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer ${
-                      pathname.startsWith("/dashboard/fuzzy")
-                        ? "bg-gray-700"
-                        : "hover:bg-gray-800"
-                    }`}
-                  >
-                    Fuzzy
-                  </button>
-
-
                 </div>
               )}
             </div>
@@ -172,6 +159,17 @@ export default function DashboardLayout({ children }) {
                     }`}
                   >
                     Control History
+                  </button>
+
+                  <button
+                    onClick={()=>router.push("/history/fuzzy")}
+                    className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer ${
+                      pathname.startsWith("/history/fuzzy")
+                        ? "bg-gray-700"
+                        : "hover:bg-gray-800"
+                    }`}
+                  >
+                    Fuzzy
                   </button>
                 </div>
               )}
