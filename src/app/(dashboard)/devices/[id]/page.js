@@ -52,6 +52,7 @@ export default function DeviceDetail() {
       : latest;
   }, null);
 
+
   const sendCommand = async (command, extra = {}) => {
   if (!device?.kode_perangkat) return;
 
@@ -180,7 +181,6 @@ const handleReplaceWater = async () => {
   try {
     // duration_seconds dikonversi ke DETIK (karena input awal Anda adalah menit)
     const durationSeconds = Number(duration) * 60; 
-
     await sendControlCommand("ganti_air", { duration: durationSeconds });
     setPumpStatus("durasi");
 

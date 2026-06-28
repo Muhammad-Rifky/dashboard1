@@ -103,8 +103,7 @@ export async function POST(req) {
         (kode_perangkat,user_id, role, action, source)
         VALUES (?, ?, ?, ?, ?)
         `,
-        [kode_perangkat, userId, role, command, "manual"]
-      );
+        [kode_perangkat, userId, role, command, "manual"]);
     }
 
     /*
