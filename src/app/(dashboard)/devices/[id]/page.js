@@ -110,8 +110,15 @@ export default function DeviceDetail() {
       setIsUpdating(false);
     }, 2500);
 
-  } catch (err) {
+  } catch(err){
     console.error(err);
+    console.error(err.stack);
+
+    return Response.json({
+        success:false,
+        message:err.message
+    },{status:500});
+}
 
     toast.error(err.message || "Gagal memperbarui data.", {
       id: "update-device",
