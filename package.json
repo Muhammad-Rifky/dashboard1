@@ -7,13 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
+  },
   "dependencies": {
     "apexcharts": "^5.15.2",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "exceljs": "^4.4.0",
     "jsonwebtoken": "^9.0.3",
-    "lucide-react": "^0.577.0",
+    "lucide-react": "^0.577.0", 
     "mysql2": "^3.17.2",
     "next": "16.1.6",
     "nodemailer": "^8.0.7",
@@ -38,3 +39,4 @@
     "tailwindcss": "^4.2.0",
     "typescript": "^5"
   }
+}
