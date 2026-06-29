@@ -85,4 +85,4 @@ if (!result.success) {
     },
     { status: 500 }
   );
-}
+};
