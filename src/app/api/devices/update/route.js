@@ -25,128 +25,64 @@ export async function POST(req) {
     });
 
     /*
-    ========================
-    PUBLISH MQTT
-    ========================
-    */
+========================
+PUBLISH MQTT
+========================
+*/
 
-    const mqttRes = await fetch(
-      "http://127.0.0.1:3001/publish",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          topic,
-          message,
-        }),
-      }
-    );
-    console.log("MQTT PUBLISH RESPONSE:", mqttRes.status, mqttRes.statusText);
+console.log("=== PUBLISH MQTT ===");
+console.log("Topic:", topic);
+console.log("Message:", message);
 
-    const result = await mqttRes.json();
+let mqttRes;
 
-    if (!result.success) {
-      return Response.json(
-        {
-          success: false,
-          message: "MQTT publish gagal",
-        },
-        { status: 500 }
-      );
-    }
+try {
+  mqttRes = await fetch("http://127.0.0.1:3001/publish", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      topic,
+      message,
+    }),
+  });
 
-    /*
-    ========================
-    UPDATE DEVICE STATUS
-    ========================
-    */
+  console.log("MQTT STATUS:", mqttRes.status);
+  console.log("MQTT STATUS TEXT:", mqttRes.statusText);
 
-    let pumpStatus = null;
+} catch (fetchErr) {
+  console.error("===== FETCH MQTT ERROR =====");
+  console.error(fetchErr);
+  console.error("CAUSE:", fetchErr.cause);
+  console.error("STACK:", fetchErr.stack);
 
-    if (command === "pompa_on") {
-      pumpStatus = "manual";
-    }
+  throw fetchErr;
+}
 
-    if (command === "ganti_air") {
-      pumpStatus = "auto";
-    }
+const responseText = await mqttRes.text();
 
-    if (command === "pompa_off") {
-      pumpStatus = "off";
-    }
+console.log("MQTT RESPONSE:");
+console.log(responseText);
 
-    if (pumpStatus) {
-      await db.query(
-        `
-        UPDATE devices
-        SET pump_status=?
-        WHERE kode_perangkat=?
-        `,
-        [pumpStatus, kode_perangkat]
-      );
-    }
+let result;
 
-    /*
-    ========================
-    SAVE CONTROL HISTORY
-    ========================
-    */
+try {
+  result = JSON.parse(responseText);
+} catch (jsonErr) {
+  console.error("JSON PARSE ERROR:", jsonErr);
 
-    if (
-      command === "pompa_on" ||
-      command === "pompa_off" ||
-      command === "ganti_air"
-    ) {
-      await db.query(
-        `
-        INSERT INTO action_logs
-        (kode_perangkat,user_id, role, action, source)
-        VALUES (?, ?, ?, ?, ?)
-        `,
-        [kode_perangkat, userId, role, command, "manual"]);
-    }
+  throw new Error(
+    `MQTT Server mengembalikan response bukan JSON: ${responseText}`
+  );
+}
 
-    /*
-    ========================
-    SAVE LAST UPDATE REQUEST
-    ========================
-    */
-
-    if (command === "update") {
-      await db.query(
-        `
-        UPDATE devices
-        SET last_update_request=NOW()
-        WHERE kode_perangkat=?
-        `,
-        [kode_perangkat]
-      );
-    }
-
-    /*
-    ========================
-    RESPONSE SUCCESS
-    ========================
-    */
-
-    return Response.json({
-      success: true,
-      message: "Command berhasil dikirim",
-    });
-
-  } catch (err) {
-    console.error("CONTROL API ERROR:", err);
-    console.error(err.stack);
-    console.error(err.cause);
-
-    return Response.json(
-      {
-        success: false,
-        message: err.message,
-      },
-      { status: 500 }
-    );
-  }
+if (!result.success) {
+  return Response.json(
+    {
+      success: false,
+      message: "MQTT publish gagal",
+    },
+    { status: 500 }
+  );
 }
