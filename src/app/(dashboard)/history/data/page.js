@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect,useState } from "react";
+import { useRouter } from "next/navigation";
+import { useFilter } from "../../../../../hook/useFilter";
+import { usePagination } from "../../../../../hook/usePagination";
+import SearchBar from "../../../../../components/SearchBar";
+import Pagination from "../../../../../components/Pagination";
+import Table from "../../../../../components/Table";
 
 export const dynamic = "force-dynamic";
 
@@ -9,13 +15,14 @@ export default function HistoriPage(){
   const [data,setData] = useState([]);
   const [filteredData,setFilteredData] = useState([]);
   const [devices,setDevices] = useState([]);
+  const [search,setSearch] = useState("");
 
   const [selectedDevice,setSelectedDevice] = useState("");
   const [startDate,setStartDate] = useState("");
   const [endDate,setEndDate] = useState("");
 
   const [currentPage,setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const rowsPerPage = 10;
 
   //  LOAD DATA
   useEffect(()=>{
@@ -34,33 +41,51 @@ export default function HistoriPage(){
 
   },[]);
 
-  //  FILTER
-  useEffect(()=>{
-
+    // ======================
+  // RESET PAGE SAAT SEARCH
+  // ======================
+  useEffect(() => {
     setCurrentPage(1);
+  }, [search]);
 
-    let filtered = [...data];
+  // ======================
+  // FILTER + PAGINATION HOOK
+  // ======================
+  const filteredLogs = useFilter({
+    data: data,
+    search,
+    fields: [
+      "kode_perangkat",
+      "action",
+      "role",
+      "status",
+      "user_name",
+    ],
+  });
 
-    if(selectedDevice){
-      filtered = filtered.filter(d=>d.kode_perangkat === selectedDevice);
-    }
+  const { paginatedData: currentData, totalPages } = usePagination({
+    data: filteredLogs,
+    currentPage,
+    rowsPerPage,
+      fields: [
+        "kode_perangkat",
+        "action",
+        "role",
+        "status",
+        "user_name",
+      ],
+  });
 
-    if(startDate && endDate){
-      filtered = filtered.filter(d=>{
-        const t = new Date(d.created_at);
-        return t >= new Date(startDate) && t <= new Date(endDate);
-      });
-    }
-
-    setFilteredData(filtered);
-
-  },[selectedDevice,startDate,endDate,data]);
-
-  //  PAGINATION
-  const indexOfLast = currentPage * rowsPerPage;
-  const indexOfFirst = indexOfLast - rowsPerPage;
-  const currentData = filteredData.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  const headers = [
+    { label: "No" },
+    { label: "Kode Perangkat" },
+    { label: "pH" },
+    { label: "suhu" },
+    { label: "TDS" },
+    { label: "NTU" },
+    { label: "Waktu Pengukuran" },
+  ];
+  
 
   //  EXPORT CSV
   const exportCSV = async () => {
@@ -187,88 +212,37 @@ export default function HistoriPage(){
       </div>
 
       {/* DESKTOP */}
-      <div className="hidden sm:block overflow-auto  rounded-lg">
-
-        <table className="w-full text-sm">
-
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3 text-left">No</th>
-              <th className="p-3 text-left">Device</th>
-              <th className="p-3 text-left">pH</th>
-              <th className="p-3 text-left">Suhu</th>
-              <th className="p-3 text-left">TDS</th>
-              <th className="p-3 text-left">Status Kekeruhan</th>
-              <th className="p-3 text-left w-1/4">Waktu</th>
+      <Table headers={headers}>
+        {currentData.length === 0 ? (
+          <tr>
+            <td colSpan={headers.length} className="text-center p-8 text-gray-400">
+              📭 Tidak ada data
+            </td>
+          </tr>
+        ) : (
+          currentData.map((d, i) => (
+            <tr key={i} className="border-b hover:bg-gray-50">
+              <td className="p-3">{i + 1+ (currentPage - 1) * rowsPerPage}</td>
+              <td className="p-3">{d.kode_perangkat}</td>
+              <td className="p-3">{Number(d.ph).toFixed(2)}</td>
+              <td className="p-3">{Number(d.suhu).toFixed(2)}°C</td>
+              <td className="p-3">{d.tds}</td>
+              <td className="p-3">{d.NTU}</td>
+              <td className="p-3">
+                {new Date(d.created_at).toLocaleString("id-ID")}
+              </td>
             </tr>
-          </thead>
-
-          <tbody>
-            {currentData.length === 0 ? (
-              <tr>
-                <td colSpan="7" className="text-center p-8 text-gray-400">
-                  📭 Tidak ada data
-                </td>
-              </tr>
-            ) : (
-            currentData.map((d,i)=>(
-              <tr key={i} className="border-b hover:bg-gray-50">
-                <td className="p-3">{indexOfFirst + i + 1}</td>
-                <td className="p-3">{d.kode_perangkat}</td>
-                <td className="p-3">{Number(d.ph).toFixed(2)}</td>
-                <td className="p-3">{Number(d.suhu).toFixed(2)}°C</td>
-                <td className="p-3">{d.tds}</td>
-                <td className="p-3">{d.turbidity_status}</td>
-                <td className="p-3">
-                  {new Date(d.created_at).toLocaleString("id-ID")}
-                </td>
-
-              </tr>
-            ))
-            )}
-          </tbody>
-
-        </table>
-
-      </div>
+          ))
+        )}
+      </Table>
 
       {/* PAGINATION */}
-      <div className="flex justify-center items-center gap-2 mt-6 flex-wrap">
-
-        <button
-          onClick={()=>setCurrentPage(prev=>Math.max(prev-1,1))}
-          disabled={currentPage === 1}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Prev
-        </button>
-
-        {Array.from(
-          { length: endPage - startPage + 1 },
-          (_, i) => startPage + i
-        ).map((page) => (
-          <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
-            className={`px-3 py-1 rounded ${
-              currentPage === page
-                ? "bg-gray-900 text-white"
-                : "border hover:bg-gray-100"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
-
-        <button
-          onClick={()=>setCurrentPage(prev=>Math.min(prev+1,totalPages))}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Next
-        </button>
-
-      </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        maxVisiblePages={maxVisiblePages}
+      />
 
     </div>
   );
