@@ -24,11 +24,7 @@ export async function POST(req) {
       duration,
     });
 
-    /*
-========================
-PUBLISH MQTT
-========================
-*/
+    /* PUBLISH MQTT*/
 
 console.log("=== PUBLISH MQTT ===");
 console.log("Topic:", topic);
@@ -62,8 +58,7 @@ try {
 
 const responseText = await mqttRes.text();
 
-console.log("MQTT RESPONSE:");
-console.log(responseText);
+console.log("MQTT RESPONSE:", responseText);
 
 let result;
 
@@ -85,4 +80,100 @@ if (!result.success) {
     },
     { status: 500 }
   );
-};
+}
+
+    /*
+    ========================
+    UPDATE DEVICE STATUS
+    ========================
+    */
+
+    let pumpStatus = null;
+
+    if (command === "pompa_on") {
+      pumpStatus = "manual";
+    }
+
+    if (command === "ganti_air") {
+      pumpStatus = "auto";
+    }
+
+    if (command === "pompa_off") {
+      pumpStatus = "off";
+    }
+
+    if (pumpStatus) {
+      await db.query(
+        `
+        UPDATE devices
+        SET pump_status=?
+        WHERE kode_perangkat=?
+        `,
+        [pumpStatus, kode_perangkat]
+      );
+    }
+
+    /*
+    ========================
+    SAVE CONTROL HISTORY
+    ========================
+    */
+
+    if (
+      command === "pompa_on" ||
+      command === "pompa_off" ||
+      command === "ganti_air"
+    ) {
+      await db.query(
+        `
+        INSERT INTO action_logs
+        (kode_perangkat,user_id, role, action, source)
+        VALUES (?, ?, ?, ?, ?)
+        `,
+        [kode_perangkat, userId, role, command, "manual"]);
+    }
+
+    /*
+    ========================
+    SAVE LAST UPDATE REQUEST
+    ========================
+    */
+
+    if (command === "update") {
+      await db.query(
+        `
+        UPDATE devices
+        SET last_update_request=NOW()
+        WHERE kode_perangkat=?
+        `,
+        [kode_perangkat]
+      );
+    }
+
+    /*
+    ========================
+    RESPONSE SUCCESS
+    ========================
+    */
+
+    return Response.json({
+      success: true,
+      message: "Command berhasil dikirim",
+    });
+
+  } catch (err) {
+  console.error("========== CONTROL API ERROR ==========");
+  console.error("MESSAGE:", err.message);
+  console.error("NAME:", err.name);
+  console.error("CAUSE:", err.cause);
+  console.error("STACK:", err.stack);
+
+  return Response.json(
+    {
+      success: false,
+      message: err.message,
+    },
+    { status: 500 }
+  );
+}
+}
