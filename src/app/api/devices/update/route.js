@@ -33,7 +33,7 @@ console.log("Message:", message);
 let mqttRes;
 
 try {
-  mqttRes = await fetch("http://127.0.0.1:3001/publish", {
+  mqttRes = await fetch("iot-aqua-rifky.duckdns.org", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
