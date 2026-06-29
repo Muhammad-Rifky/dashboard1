@@ -138,6 +138,8 @@ export async function POST(req) {
 
   } catch (err) {
     console.error("CONTROL API ERROR:", err);
+    console.error(err.stack);
+    console.error(err.cause);
 
     return Response.json(
       {
