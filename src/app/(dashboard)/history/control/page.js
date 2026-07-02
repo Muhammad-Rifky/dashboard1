@@ -77,7 +77,7 @@ export default function ActionLogsPage() {
   ];
   // Mapping action -> label Indonesia
   const actionLabels = {
-    water_change: "Ganti Air",
+    water_changed: "Ganti Air",
     pump_forced_on: "Hidupkan Pompa",
     pump_forced_off: "Matikan Pompa",
     manual_water_change: "Ganti Air",

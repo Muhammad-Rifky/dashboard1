@@ -24,38 +24,61 @@ export async function POST(req) {
       duration,
     });
 
-    /*
-    ========================
-    PUBLISH MQTT
-    ========================
-    */
+    /* PUBLISH MQTT*/
 
-    const mqttRes = await fetch(
-      "http://127.0.0.1:3001/publish",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          topic,
-          message,
-        }),
-      }
-    );
-    console.log("MQTT PUBLISH RESPONSE:", mqttRes.status, mqttRes.statusText);
+console.log("=== PUBLISH MQTT ===");
+console.log("Topic:", topic);
+console.log("Message:", message);
 
-    const result = await mqttRes.json();
+try {
+  mqttRes = await fetch("https://iot-aqua-rifky.duckdns.org/publish", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    topic,
+    message,
+  }),
+});
 
-    if (!result.success) {
-      return Response.json(
-        {
-          success: false,
-          message: "MQTT publish gagal",
-        },
-        { status: 500 }
-      );
-    }
+  console.log("MQTT STATUS:", mqttRes.status);
+  console.log("MQTT STATUS TEXT:", mqttRes.statusText);
+
+} catch (fetchErr) {
+  console.error("===== FETCH MQTT ERROR =====");
+  console.error(fetchErr);
+  console.error("CAUSE:", fetchErr.cause);
+  console.error("STACK:", fetchErr.stack);
+
+  throw fetchErr;
+}
+
+const responseText = await mqttRes.text();
+
+console.log("MQTT RESPONSE:", responseText);
+
+let result;
+
+try {
+  result = JSON.parse(responseText);
+} catch (jsonErr) {
+  console.error("JSON PARSE ERROR:", jsonErr);
+
+  throw new Error(
+    `MQTT Server mengembalikan response bukan JSON: ${responseText}`
+  );
+}
+
+if (!result.success) {
+  return Response.json(
+    {
+      success: false,
+      message: "MQTT publish gagal",
+    },
+    { status: 500 }
+  );
+}
 
     /*
     ========================
@@ -141,12 +164,12 @@ export async function POST(req) {
     console.error(err.stack);
     console.error(err.cause);
 
-    return Response.json(
-      {
-        success: false,
-        message: err.message,
-      },
-      { status: 500 }
-    );
-  }
+  return Response.json(
+    {
+      success: false,
+      message: err.message,
+    },
+    { status: 500 }
+  );
+}
 }
