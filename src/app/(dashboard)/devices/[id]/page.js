@@ -128,6 +128,8 @@ export default function DeviceDetail() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          kode_perangkat: latestAction?.kode_perangkat,
+          command: "Ganti Air",
           fuzzy_result_id: latestAction?.id, // 🔥 INI YANG KURANG
         }),
       });
