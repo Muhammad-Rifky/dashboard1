@@ -75,7 +75,14 @@ export default function ActionLogsPage() {
     { label: "Status" },
     { label: "Waktu" },
   ];
-  
+  // Mapping action -> label Indonesia
+  const actionLabels = {
+    water_change: "Ganti Air",
+    pump_forced_on: "Hidupkan Pompa",
+    pump_forced_off: "Matikan Pompa",
+    manual_water_change: "Ganti Air",
+
+  };
   
 
   return (
@@ -98,7 +105,7 @@ export default function ActionLogsPage() {
           <tr key={log.id} className="border-t hover:bg-gray-50">
             <td className="p-3">{index + 1 + (currentPage - 1) * rowsPerPage}</td>
             <td className="p-3">{log.kode_perangkat}</td>
-            <td className="p-3">{log.action}</td>
+            <td className="p-3">{actionLabels[log.action] || log.action}</td>
             <td className="p-3">{log.user_name}</td>
             <td className="p-3">{log.role}</td>
             <td className="p-3">{log.status}</td>
