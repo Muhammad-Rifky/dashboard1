@@ -2,6 +2,7 @@ import db from "../../../lib/db";
 
 export async function POST(req) {
   try {
+    console.log("API masuk")
     const body = await req.json();
 
     const {
@@ -42,6 +43,7 @@ export async function POST(req) {
         }),
       }
     );
+    console.log("MQTT PUBLISH RESPONSE:", mqttRes.status, mqttRes.statusText);
 
     const result = await mqttRes.json();
 
@@ -136,6 +138,8 @@ export async function POST(req) {
 
   } catch (err) {
     console.error("CONTROL API ERROR:", err);
+    console.error(err.stack);
+    console.error(err.cause);
 
     return Response.json(
       {

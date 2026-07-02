@@ -33,10 +33,13 @@ export async function GET() {
         SELECT id
         FROM fuzzy_result
         WHERE kode_perangkat = al.kode_perangkat
+          -- PENYESUAIAN CRITICAL: Kunci status fuzzy pada saat/sebelum log ini dibuat
+          AND created_at <= al.created_at 
         ORDER BY created_at DESC
         LIMIT 1
       )
-      WHERE 1=1
+    WHERE 1=1
+      AND al.action = 'water_changed'
     `;
 
     const params = [];

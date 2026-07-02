@@ -5,13 +5,13 @@ export async function GET(req){
 
   const { searchParams } = new URL(req.url);
 
-  const device_id = searchParams.get("device_id");
+  const kode_perangkat = searchParams.get("kode_perangkat");
   const start = searchParams.get("start");
   const end = searchParams.get("end");
 
   let query = `
     SELECT
-      device_id,
+      kode_perangkat,
       ph,
       suhu,
       tds,
@@ -23,9 +23,9 @@ export async function GET(req){
 
   let params = [];
 
-  if(device_id){
-    query += " AND device_id = ?";
-    params.push(device_id);
+  if(kode_perangkat){
+    query += " AND kode_perangkat = ?";
+    params.push(kode_perangkat);
   }
 
   if(start && end){
@@ -61,7 +61,7 @@ export async function GET(req){
 
     sheet.addRow([
       index+1,
-      row.device_id,
+      row.kode_perangkat,
       row.ph,
       row.suhu,
       row.tds,

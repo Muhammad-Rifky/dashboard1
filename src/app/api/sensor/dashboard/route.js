@@ -16,7 +16,7 @@ export async function GET(req){
   const kode_perangkat = searchParams.get("kode_perangkat");
 
   let query = `
-    SELECT kode_perangkat, ph, suhu, tds, turbidity_adc, created_at
+    SELECT kode_perangkat, ph, suhu, tds, NTU, created_at
 
     FROM sensor_data
   `;
@@ -36,7 +36,7 @@ export async function GET(req){
   const avgPH = rows.length ? rows.reduce((a,b)=>a+b.ph,0)/rows.length : 0;
   const avgSuhu = rows.length ? rows.reduce((a,b)=>a+b.suhu,0)/rows.length : 0;
   const avgTDS = rows.length ? rows.reduce((a,b)=>a+b.tds,0)/rows.length : 0;
-  const avgTurbidity = rows.length ? rows.reduce((a,b)=>a+b.turbidity_status,0)/rows.length : 0;
+  const avgTurbidity = rows.length ? rows.reduce((a,b)=>a+b.NTU,0)/rows.length : 0;
 
   return NextResponse.json({
     average:{

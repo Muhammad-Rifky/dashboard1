@@ -36,7 +36,7 @@ export default function FuzzyDetailPage() {
         </button>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold mb-4">Detail Fuzzy{data.id}</h1>
+        <h1 className="text-2xl font-bold mb-4">Detail Fuzzy {data.id}</h1>
 
         {/* info pengambilan data */}
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow border mb-6">
@@ -45,9 +45,9 @@ export default function FuzzyDetailPage() {
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <p><b>ID:</b></p>
-            <p><b>Nama:</b></p>
-            <p><b>Lokasi:</b> </p>
+            <p><b>ID:</b> {data.id}</p>
+            <p><b>Nama:</b> {data.name}</p>
+            <p><b>Lokasi:</b> {data.location}</p>
         </div>
         </div>
     </div>

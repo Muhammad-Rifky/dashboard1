@@ -13,7 +13,7 @@ export function middleware(req){
   return NextResponse.next();
 
   if(user.role === "petani"){
-  query += " AND device_id IN (SELECT device_id FROM devices WHERE user_id = ?)";
+  query += " AND kode_perangkat IN (SELECT kode_perangkat  FROM devices WHERE user_id = ?)";
   params.push(user.id);
 }
 

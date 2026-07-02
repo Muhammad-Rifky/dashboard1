@@ -112,10 +112,8 @@ export default function DeviceDetail() {
 
   } catch (err) {
     console.error(err);
-
-    toast.error(err.message || "Gagal memperbarui data.", {
-      id: "update-device",
-    });
+    console.error(err.stack);
+    return response.json({ error: err.message || "Gagal memperbarui data." }, { status: 500 });
 
     setIsUpdating(false);
   }

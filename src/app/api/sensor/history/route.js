@@ -13,7 +13,7 @@ export async function GET(req){
   const kode_perangkat = searchParams.get("kode_perangkat");
 
   let query = `
-    SELECT d.kode_perangkat, s.ph, s.suhu, s.tds,s.turbidity_status, s.created_at
+    SELECT d.kode_perangkat, s.ph, s.suhu, s.tds,s.NTU, s.created_at
     FROM sensor_data s
     JOIN devices d ON s.kode_perangkat = d.kode_perangkat
     WHERE 1=1
