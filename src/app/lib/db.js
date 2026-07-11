@@ -3,7 +3,7 @@ import mysql from "mysql2/promise";
 const config = {
   host: "localhost",
   user: "iotuser",
-  password: "123456"
+  password: "123456",
   database: "iot_system",
   timezone: "+07:00",
   dateStrings: true,
