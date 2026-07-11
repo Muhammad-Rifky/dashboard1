@@ -124,7 +124,7 @@ export function fuzzyMamdani(input) {
     ph,
     suhu,
     tds,
-    turbidity_adc
+    NTU
   } = input;
 
   //
@@ -133,7 +133,7 @@ export function fuzzyMamdani(input) {
   const PH = fuzzifyPH(ph);
   const SUHU = fuzzifySuhu(suhu);
   const TDS = fuzzifyTDS(tds);
-  const TURB = fuzzifyTurbidityADC(turbidity_adc);
+  const TURB = fuzzyfyNTU(NTU);
 
   //
   // =====================================================

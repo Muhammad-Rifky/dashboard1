@@ -12,8 +12,8 @@ export default function DeviceDetail() {
   const [isSending, setIsSending] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [device, setDevice] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [pumpStatus, setPumpStatus] = useState("off");
+  const [loading, setLoading] = useState(true);
   const [duration, setDuration] = useState("");
   const latestAction = device?.latestAction; //ambil dari
   const [cooldown, setCooldown] = useState(0);
@@ -25,7 +25,11 @@ export default function DeviceDetail() {
 
       const data = await res.json();
 
+      console.log("FETCH DEVICE:", data.pump_status);
+
       setDevice(data);
+      setPumpStatus(data.pump_status);
+
     } catch (err) {
       console.error(err);
     } finally {

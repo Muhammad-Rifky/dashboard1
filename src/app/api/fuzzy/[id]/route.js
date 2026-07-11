@@ -7,16 +7,20 @@ export async function GET(request, { params }) {
     const [rows] = await db.execute(
       `
       SELECT
-        id,
-        kode_perangkat,
-        sensor_data_id,
-        score,
-        status,
-        action,
-        detail,
-        created_at
-      FROM fuzzy_result
-      WHERE id = ?
+        f.id,
+        f.kode_perangkat,
+        f.sensor_data_id,
+        f.score,
+        f.status,
+        f.action,
+        f.detail,
+        f.created_at,
+        d.name,
+        d.location
+    FROM fuzzy_result f
+    JOIN devices d
+        ON d.kode_perangkat = f.kode_perangkat
+    WHERE f.id = ?
       `,
       [id]
     );

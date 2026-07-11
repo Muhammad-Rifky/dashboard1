@@ -14,7 +14,7 @@
     "bcryptjs": "^3.0.3",
     "exceljs": "^4.4.0",
     "jsonwebtoken": "^9.0.3",
-    "lucide-react": "^0.577.0", 
+    "lucide-react": "^0.577.0",
     "mysql2": "^3.17.2",
     "next": "16.1.6",
     "nodemailer": "^8.0.7",
@@ -23,7 +23,7 @@
     "react-dom": "19.2.3",
     "react-hot-toast": "^2.6.0",
     "rechart": "^0.0.1",
-    "recharts": "^3.7.0",
+    "recharts": "^3.9.2",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3"
   },

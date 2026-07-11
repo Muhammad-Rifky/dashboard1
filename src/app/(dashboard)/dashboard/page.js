@@ -8,7 +8,8 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Brush
 } from "recharts";
 import { io } from "socket.io-client";
 
@@ -18,9 +19,11 @@ export default function DashboardPage() {
 
   const [data,setData] = useState(null);
   const [period,setPeriod] = useState("1d");
+  const [chartData,setChartData] = useState([]);
   const [devices,setDevices] = useState([]);
   const [selectedDevice,setSelectedDevice] = useState("");
 
+  //fetch devices on mount
   useEffect(()=>{
     fetch("/api/devices")
     .then(res=>res.json())
@@ -32,51 +35,67 @@ export default function DashboardPage() {
     });
   },[]);
 
-  useEffect(()=>{
+  //fetch card data and listen to socket updates
+  useEffect(() => {
 
-    if(!selectedDevice) return;
+    if (!selectedDevice) return;
 
     let socket;
 
     fetch(`/api/sensor/dashboard?kode_perangkat=${selectedDevice}`)
-    .then(res=>{
-      if(res.status === 401){
-        window.location.href="/login";
-        return null;
-      }
-      return res.json();
-    })
-    .then(res=>{
-      if(res) setData(res);
-    });
-    socket = io("https://iot-aqua-rifky.duckdns.org",{ 
-      transports: ["websocket"]});
-
-    socket.on("sensor_update",(newData)=>{
-
-      if(newData.kode_perangkat !== selectedDevice) return;
-
-      setData(prev=>{
-        if(!prev || !prev.history) return prev;
-
-        let updatedHistory = [...prev.history, newData];
-
-        if(updatedHistory.length > 14){
-          updatedHistory = updatedHistory.slice(-14);
+      .then(res => {
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return null;
         }
-
-        return {
-          history: updatedHistory
-        };
+        return res.json();
+      })
+      .then(res => {
+        if (res) setData(res);
       });
 
+    socket = io("https://iot-aqua-rifky.duckdns.org", {
+      transports: ["websocket"]
     });
 
-    return ()=>{
-      if(socket) socket.disconnect();
+    socket.on("sensor_update", (newData) => {
+
+      if (newData.kode_perangkat !== selectedDevice) return;
+
+      // update card saja
+
+    });
+
+    return () => {
+      if (socket) socket.disconnect();
     };
 
-  },[selectedDevice]);
+  }, [selectedDevice]);
+
+  //fetch chart data when period or selectedDevice changes
+  useEffect(() => {
+
+    if (!selectedDevice) return;
+
+    fetch(
+      `/api/sensor/chart?kode_perangkat=${selectedDevice}&period=${period}`
+    )
+      .then(res => {
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return null;
+        }
+        return res.json();
+      })
+      .then(res => {
+
+        console.log("Jumlah data dari API :", res.length);
+
+        setChartData(res);
+
+      });
+
+  }, [selectedDevice, period]);
 
   if(!data || !data.history){
     return <p>Loading...</p>;
@@ -166,28 +185,28 @@ export default function DashboardPage() {
 
         <Chart
           title="Grafik pH"
-          data={data.history}
+          data={chartData}
           dataKey="ph"
           period={period}
         />
 
         <Chart
           title="Grafik Suhu"
-          data={data.history}
+          data={chartData}
           dataKey="suhu"
           period={period}
         />
 
         <Chart
           title="Grafik TDS"
-          data={data.history}
+          data={chartData}
           dataKey="tds"
           period={period}
         />
 
         <Chart
           title="Grafik Kekeruhan"
-          data={data.history}
+          data={chartData}
           dataKey="NTU"
           period={period}
         />
@@ -349,31 +368,36 @@ function Chart({ title, data, dataKey, period }) {
     switch (period) {
 
       case "1d":
-        return date.toLocaleTimeString("id-ID", {
+        return date.toLocaleString("id-ID", {
           hour: "2-digit",
           minute: "2-digit"
         });
 
       case "7d":
-        return date.toLocaleDateString("id-ID", {
-          weekday: "short"
+        return date.toLocaleString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit"
         });
 
       case "30d":
-        return date.toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "short"
+        return date.toLocaleString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit"
         });
 
       case "365d":
         return date.toLocaleDateString("id-ID", {
+          day: "2-digit",
           month: "short",
-          year: "2-digit"
+          year: "numeric"
         });
 
       default:
         return date.toLocaleString("id-ID");
     }
+
   };
 
   const getYAxisProps = () => {
@@ -407,6 +431,22 @@ function Chart({ title, data, dataKey, period }) {
     }
   };
 
+  const getAxisInterval = () => {
+
+    switch (period) {
+      case "1d":
+        return 0;
+      case "7d":
+        return 0;
+      case "30d":
+        return 0;
+      case "365d":
+        return 0;
+      default:
+        return 0;
+    }
+  };
+
   return (
 
     <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-gray-200 mb-8">
@@ -427,6 +467,8 @@ function Chart({ title, data, dataKey, period }) {
           <XAxis
             dataKey="created_at"
             tickFormatter={formatTime}
+            interval={getAxisInterval()}
+            minTickGap={20}
           />
 
           <YAxis {...getYAxisProps()} />
@@ -439,7 +481,12 @@ function Chart({ title, data, dataKey, period }) {
             type="monotone"
             dataKey={dataKey}
             strokeWidth={2}
-            dot
+            dot={period === "1d"}
+          />
+          <Brush
+            dataKey="created_at"
+            height={25}
+            travellerWidth={10}
           />
 
         </LineChart>
