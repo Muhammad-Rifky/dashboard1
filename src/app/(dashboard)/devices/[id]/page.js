@@ -19,6 +19,7 @@ export default function DeviceDetail() {
   const [cooldown, setCooldown] = useState(0);
   const socketRef = useRef(null);
   const cooldownRef = useRef(null);
+  const [durationUnit, setDurationUnit] = useState("minute"); // State untuk unit durasi
 
   const fetchData = async () => {
     try {
@@ -239,7 +240,13 @@ const handleReplaceWater = async () => {
 
   try {
     // duration_seconds dikonversi ke DETIK (karena input awal Anda adalah menit)
-    const durationSeconds = Number(duration) * 60; 
+    let durationSeconds = Number(duration);
+
+    if (durationUnit === "minute") {
+      durationSeconds *= 60;
+    } else {
+      durationSeconds *= 3600;
+    }
     await sendControlCommand("ganti_air", { duration: durationSeconds });
     setPumpStatus("durasi");
 
@@ -610,15 +617,29 @@ const getNTUColor = (ntu) => {
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow border">
         <h2 className="font-semibold mb-4 text-gray-700">Kontrol Device</h2>
 
-        <input
-          type="number"
-          min="1"
-          value={duration? duration / 60 : ""}
-          disabled={isRunning}
-          onChange={(e) => setDuration(Number(e.target.value) * 60)}
-          className="border p-3 rounded w-full mb-4"
-          placeholder="Masukkan durasi ganti air (dalam menit)"
-        />
+        <div className="flex gap-2 mb-4">
+
+          <input
+            type="number"
+            min="1"
+            value={duration}
+            disabled={isRunning}
+            onChange={(e) => setDuration(e.target.value)}
+            className="border p-3 rounded flex-1"
+            placeholder="Durasi"
+          />
+
+          <select
+            value={durationUnit}
+            disabled={isRunning}
+            onChange={(e) => setDurationUnit(e.target.value)}
+            className="border p-3 rounded"
+          >
+            <option value="minute">Menit</option>
+            <option value="hour">Jam</option>
+          </select>
+
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
@@ -644,7 +665,7 @@ const getNTUColor = (ntu) => {
             disabled={isRunning || isOffline || isSending}
             className="w-full border border-blue-500 text-blue-500 py-2 rounded hover:bg-blue-500 hover:text-white disabled:bg-gray-400 disabled:text-white"
           >
-            Ganti Air
+            Hidupkan Pompa (durasi)
           </button>
 
           <button
@@ -652,7 +673,7 @@ const getNTUColor = (ntu) => {
             disabled={isRunning || isOffline || isSending}
             className="w-full border border-purple-500 text-purple-500 py-2 rounded hover:bg-purple-500 hover:text-white disabled:bg-gray-400 disabled:text-white"
           >
-            Pompa ON
+            Hidupkan Pompa
           </button>
 
           <button
