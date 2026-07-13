@@ -17,6 +17,9 @@ export default function DeviceDetail() {
   const [duration, setDuration] = useState("");
   const latestAction = device?.latestAction; //ambil dari
   const [cooldown, setCooldown] = useState(0);
+  const socketRef = useRef(null);
+  const cooldownRef = useRef(null);
+
   const fetchData = async () => {
     try {
       const res = await fetch(`/api/devices/${params.id}`, {
@@ -43,9 +46,72 @@ export default function DeviceDetail() {
 
   // fallback polling
   useEffect(() => {
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
-  }, []);
+
+    const socket = io("https://iot-aqua-rifky.duckdns.org", {
+      transports: ["websocket"],
+    });
+
+    socketRef.current = socket;
+
+    socket.on("sensor_update", (newData) => {
+
+      if (newData.kode_perangkat !== device?.kode_perangkat) return;
+
+      fetchData();
+
+      if (isUpdating) {
+
+        toast.success("Data terbaru berhasil diterima.", {
+          id: "update-device",
+        });
+
+        setIsUpdating(false);
+
+        setCooldown(10);
+
+        if (cooldownRef.current)
+          clearInterval(cooldownRef.current);
+
+        cooldownRef.current = setInterval(() => {
+
+          setCooldown((prev) => {
+
+            if (prev <= 1) {
+
+              clearInterval(cooldownRef.current);
+
+              return 0;
+
+            }
+
+            return prev - 1;
+
+          });
+
+        }, 1000);
+
+      }
+
+    });
+
+    socket.on("sensor_error",(data)=>{
+
+        if(data.kode_perangkat !== device?.kode_perangkat) return;
+
+        toast.error(data.message);
+
+    });
+
+    return () => {
+
+      socket.disconnect();
+
+      if(cooldownRef.current)
+        clearInterval(cooldownRef.current);
+
+    };
+
+  }, [device?.kode_perangkat, isUpdating]);
 
   const latestSensor = device?.sensor?.reduce((latest, item) => {
     if (!latest) return item;
@@ -82,46 +148,37 @@ export default function DeviceDetail() {
 };
 
   const handleUpdateDevice = async () => {
-  try {
-    setIsUpdating(true);
+    try {
 
-    await sendCommand("update");
+      setIsUpdating(true);
 
-    toast.loading("Meminta perangkat memperbarui data...", {
-      id: "update-device",
-    });
-
-    setCooldown(10);
-
-    const interval = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
+      toast.loading(
+        "Meminta perangkat memperbarui data...",
+        {
+          id:"update-device"
         }
-        return prev - 1;
-      });
-    }, 1000);
+      );
 
-    // tunggu perangkat mengirim data baru
-    setTimeout(async () => {
-      await fetchData();
+      await sendCommand("update");
 
-      toast.success("Data terbaru berhasil diterima.", {
-        id: "update-device",
-      });
+    }
+
+    catch(err){
+
+      console.error(err);
+
+      toast.error(
+        err.message,
+        {
+          id:"update-device"
+        }
+      );
 
       setIsUpdating(false);
-    }, 2500);
 
-  } catch (err) {
-    console.error(err);
-    console.error(err.stack);
-    return response.json({ error: err.message || "Gagal memperbarui data." }, { status: 500 });
+    }
 
-    setIsUpdating(false);
-  }
-};
+  };
   const handleConfirmWaterChange = async () => {
     try {
       setIsSending(true);
@@ -567,17 +624,19 @@ const getNTUColor = (ntu) => {
 
           <button
             onClick={handleUpdateDevice}
-            disabled={isUpdating || isOffline || isSending}
+            disabled={isUpdating || cooldown > 0 || isOffline || isSending}
             className="w-full border border-green-500 text-green-500 py-2 rounded hover:bg-green-500 hover:text-white disabled:bg-gray-400 disabled:text-white"
           >
             {isUpdating ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Memperbarui...
-              </span>
-            ) : (
-              "Update"
-            )}
+                  <span className="flex items-center justify-center gap-2">
+                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Memperbarui...
+                  </span>
+              ) : cooldown > 0 ? (
+                  `Update (${cooldown})`
+              ) : (
+                  "Update"
+              )}
           </button>
 
           <button
