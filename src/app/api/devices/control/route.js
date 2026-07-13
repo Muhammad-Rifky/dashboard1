@@ -57,7 +57,7 @@ export async function POST(request) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            topic: `iot/${kode_perangkat}/control`,
+            topic: `iot/control/${kode_perangkat}`,
             message: JSON.stringify({
               command: "ganti_air",
               duration: duration || 0,
@@ -91,7 +91,7 @@ export async function POST(request) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            topic: `iot/${kode_perangkat}/control`,
+            topic: `iot/control/${kode_perangkat}`,
             message: JSON.stringify({
               command: "pompa_on",
             }),
@@ -123,7 +123,7 @@ export async function POST(request) {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              topic: `iot/${kode_perangkat}/control`,
+              topic: `iot/control/${kode_perangkat}`,
               message: JSON.stringify({
                 command: "pompa_off",
               }),
