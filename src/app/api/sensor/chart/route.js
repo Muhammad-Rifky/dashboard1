@@ -42,6 +42,7 @@ export async function GET(req) {
           AVG(NTU) AS NTU
         FROM sensor_data
         ${where}
+        AND is_valid = 1
         AND created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)
         GROUP BY
           kode_perangkat,
