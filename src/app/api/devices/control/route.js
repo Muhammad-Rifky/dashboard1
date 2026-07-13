@@ -5,9 +5,7 @@ import { cookies } from "next/headers";
 export async function POST(request) {
   try {
 
-    // ======================
     // Ambil token dari cookie
-    // ======================
     const token = (await cookies()).get("token")?.value;
 
     if (!token) {
@@ -17,9 +15,7 @@ export async function POST(request) {
       );
     }
 
-    // ======================
     // Decode JWT
-    // ======================
     let decoded;
     try {
       decoded = jwt.verify(
@@ -36,15 +32,11 @@ export async function POST(request) {
     const userId = decoded.id;
     const userRole = decoded.role; // FIX: ambil dari JWT
 
-    // ======================
     // Body Request
-    // ======================
     const body = await request.json();
     const { command, kode_perangkat, duration, fuzzy_result_id } = body;
 
-    // ====================================================
     // BRANCH A: KONTROL MANUAL POMPA (Jika terdapat 'command')
-    // ====================================================
     if (command) {
       if (!kode_perangkat) {
         return Response.json(
@@ -59,6 +51,19 @@ export async function POST(request) {
           `UPDATE devices SET pump_status = 'manual' WHERE kode_perangkat = ?`,
           [kode_perangkat]
         );
+        await fetch("http://localhost:3001/publish", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            topic: `iot/${kode_perangkat}/control`,
+            message: JSON.stringify({
+              command: "ganti_air",
+              duration: duration || 0,
+            }),
+          }),
+        });
 
         try {
           await db.execute(
@@ -80,6 +85,19 @@ export async function POST(request) {
           [kode_perangkat]
         );
 
+        await fetch("http://localhost:3001/publish", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            topic: `iot/${kode_perangkat}/control`,
+            message: JSON.stringify({
+              command: "pompa_on",
+            }),
+          }),
+        });
+
         try {
           await db.execute(
             `INSERT INTO action_logs (fuzzy_result_id, kode_perangkat, user_id, role, action) 
@@ -99,6 +117,18 @@ export async function POST(request) {
           `UPDATE devices SET pump_status = 'off' WHERE kode_perangkat = ?`,
           [kode_perangkat]
         );
+        await fetch("http://localhost:3001/publish", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              topic: `iot/${kode_perangkat}/control`,
+              message: JSON.stringify({
+                command: "pompa_off",
+              }),
+            }),
+          });
 
         try {
           await db.execute(
@@ -116,9 +146,7 @@ export async function POST(request) {
       return Response.json({ error: "Command tidak dikenal" }, { status: 400 });
     }
 
-    // ====================================================
     // BRANCH B: KONFIRMASI REKOMENDASI FUZZY (Kode Asli Anda)
-    // ====================================================
     if (!fuzzy_result_id) {
       return Response.json(
         { error: "fuzzy_result_id atau command wajib diisi" },
