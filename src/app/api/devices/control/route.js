@@ -30,7 +30,7 @@ export async function POST(request) {
     }
 
     const userId = decoded.id;
-    const userRole = decoded.role; // FIX: ambil dari JWT
+    const userRole = decoded.role; 
 
     // Body Request
     const body = await request.json();
@@ -51,7 +51,7 @@ export async function POST(request) {
           `UPDATE devices SET pump_status = 'manual' WHERE kode_perangkat = ?`,
           [kode_perangkat]
         );
-        await fetch("http://localhost:3001/publish", {
+        await fetch("https://iot-aqua-rifky.duckdns.org:3001/publish", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -85,7 +85,7 @@ export async function POST(request) {
           [kode_perangkat]
         );
 
-        await fetch("http://localhost:3001/publish", {
+        await fetch(""https://iot-aqua-rifky.duckdns.org:3001/publish", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -117,7 +117,7 @@ export async function POST(request) {
           `UPDATE devices SET pump_status = 'off' WHERE kode_perangkat = ?`,
           [kode_perangkat]
         );
-        await fetch("http://localhost:3001/publish", {
+        await fetch(""https://iot-aqua-rifky.duckdns.org:3001/publish", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -217,7 +217,7 @@ export async function POST(request) {
           fuzzy_result_id,
           fuzzy.kode_perangkat,
           userId,
-          userRole, // ✅ FIX: bukan user.role
+          userRole, 
           "water_changed"
         ]
       );
