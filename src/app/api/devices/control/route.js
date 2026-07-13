@@ -51,7 +51,7 @@ export async function POST(request) {
           `UPDATE devices SET pump_status = 'manual' WHERE kode_perangkat = ?`,
           [kode_perangkat]
         );
-        await fetch("https://iot-aqua-rifky.duckdns.org:3001/publish", {
+        await fetch("http://iot-aqua-rifky.duckdns.org:3001/publish", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -85,7 +85,7 @@ export async function POST(request) {
           [kode_perangkat]
         );
 
-        await fetch("https://iot-aqua-rifky.duckdns.org:3001/publish", {
+        await fetch("http://iot-aqua-rifky.duckdns.org:3001/publish", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -117,7 +117,7 @@ export async function POST(request) {
           `UPDATE devices SET pump_status = 'off' WHERE kode_perangkat = ?`,
           [kode_perangkat]
         );
-        await fetch("https://iot-aqua-rifky.duckdns.org:3001/publish", {
+        await fetch("http://iot-aqua-rifky.duckdns.org:3001/publish", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
